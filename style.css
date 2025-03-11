@@ -1,0 +1,7 @@
+/* Bo góc cho frame */
+#log_frame {
+    border-radius: 10px;
+    border: 2px solid #888;
+    background-color: #f8f8f8;
+    padding: 10px;
+}
