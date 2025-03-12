@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <pthread.h>
 #include <errno.h>
+#include "../include/aes.h"
 
 #define BUFFER_SIZE 4096
 GtkWidget *window_login, *window_main;
@@ -486,18 +487,11 @@ void open_main_window()
 
     gtk_widget_show_all(window_main);
 }
-void receive_file(int sockfd)
+void receive_file(int sockfd, char *filename, long file_size)
 {
-    char filename[256];
-    recv(sockfd, filename, sizeof(filename), 0);
-    send(sockfd, "ACK", 3, 0);
-
-    long file_size;
-    recv(sockfd, &file_size, sizeof(file_size), 0);
-    send(sockfd, "ACK", 3, 0);
-
     char filepath[512];
     snprintf(filepath, sizeof(filepath), "./received_files/%s", filename);
+
     FILE *file = fopen(filepath, "wb");
     if (!file)
     {
@@ -508,20 +502,18 @@ void receive_file(int sockfd)
     printf("Đang nhận file '%s' (%ld bytes)...\n", filename, file_size);
 
     unsigned char buffer[BUFFER_SIZE];
-    long total_received = 0;
-    while (total_received < file_size)
+    size_t bytes_received = 0;
+    while (bytes_received < file_size)
     {
         ssize_t recv_bytes = recv(sockfd, buffer, BUFFER_SIZE, 0);
         if (recv_bytes <= 0)
         {
-            perror("Lỗi khi nhận dữ liệu");
+            perror("Lỗi khi nhận dữ liệu hoặc kết nối bị đóng");
             break;
         }
         fwrite(buffer, 1, recv_bytes, file);
-        total_received += recv_bytes;
-        send(sockfd, "ACK", 3, 0);
+        bytes_received += recv_bytes;
     }
-
     fclose(file);
     printf("Nhận file '%s' thành công!\n", filename);
 }
