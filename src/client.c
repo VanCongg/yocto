@@ -280,8 +280,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
     g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
 
-    g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
-
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
                                   (const uint8_t *)encrypted_file,
                                   (const uint8_t *)key, (AESKeyLength)key_size);
@@ -316,6 +314,12 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
 
     // 📤 **Gửi tên file mã hóa, không phải new_filename**
     char command[512];
+    if (strlen(encrypted_file) + strlen(receiver) >= 500)
+    {
+        g_print("❌ Lỗi: Đường dẫn file quá dài!\n");
+        return;
+    }
+
     snprintf(command, sizeof(command), "SEND_FILE|%s|%s", encrypted_file, receiver);
     if (send(sockfd, command, strlen(command), 0) == -1)
     {
