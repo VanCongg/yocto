@@ -222,7 +222,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         return;
     }
 
-    // Lấy key từ entry_key
     const char *key = gtk_entry_get_text(GTK_ENTRY(entry_key));
     if (strlen(key) == 0)
     {
@@ -230,7 +229,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         return;
     }
 
-    // Lấy độ dài key từ combo_keysize
     int key_size;
     const char *key_size_str = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_keysize));
     if (key_size_str)
@@ -249,20 +247,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     g_print("🔍 Key: %s\n", key);
     g_print("🔍 Key Size: %d\n", key_size);
 
-    // --- XỬ LÝ TÊN FILE ---
-    char filename_no_ext[PATH_MAX];
-    strncpy(filename_no_ext, selected_filepath, sizeof(filename_no_ext) - 1);
-    filename_no_ext[sizeof(filename_no_ext) - 1] = '\0';
-
-    char *dot = strrchr(filename_no_ext, '.');
-    if (dot)
-    {
-        *dot = '\0'; // Loại bỏ phần mở rộng
-    }
-
-    g_print("📝 Tên file không có phần mở rộng: %s\n", filename_no_ext);
-
-    // --- TẠO THƯ MỤC 'en/' (NẾU CHƯA TỒN TẠI) ---
+    // Tạo thư mục en/ nếu chưa tồn tại
     struct stat st = {0};
     if (stat("en", &st) == -1)
     {
@@ -274,13 +259,11 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         g_print("📂 Đã tạo thư mục 'en/'\n");
     }
 
-    // --- TẠO TÊN FILE MÃ HÓA ---
+    // Định dạng tên file mã hóa
     char encrypted_file[PATH_MAX];
-    snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
-
+    snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", new_filename);
     g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
 
-    // --- MÃ HÓA FILE ---
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
                                   (const uint8_t *)encrypted_file,
                                   (const uint8_t *)key, (AESKeyLength)key_size);
@@ -292,7 +275,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     }
     g_print("🔒 File đã mã hóa thành công: %s\n", encrypted_file);
 
-    // --- KIỂM TRA KÍCH THƯỚC FILE MÃ HÓA ---
     struct stat encrypted_stat;
     if (stat(encrypted_file, &encrypted_stat) != 0)
     {
@@ -301,7 +283,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     }
     g_print("📏 Kích thước file mã hóa: %ld bytes\n", encrypted_stat.st_size);
 
-    // --- MỞ FILE MÃ HÓA ĐỂ GỬI ---
     FILE *file = fopen(encrypted_file, "rb");
     if (!file)
     {
@@ -309,23 +290,22 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         return;
     }
 
-    // Lấy kích thước file
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
     g_print("📏 Kích thước file thực tế trước khi gửi: %ld bytes\n", file_size);
 
-    // --- GỬI THÔNG TIN FILE ---
+    // 📤 **Gửi tên file mã hóa, không phải new_filename**
     char command[512];
-    snprintf(command, sizeof(command), "SEND_FILE|%s|%s", new_filename, receiver);
+    snprintf(command, sizeof(command), "SEND_FILE|%s|%s", encrypted_file, receiver);
     if (send(sockfd, command, strlen(command), 0) == -1)
     {
         perror("❌ Lỗi khi gửi thông tin file");
         fclose(file);
         return;
     }
-    g_print("📤 Đã gửi yêu cầu gửi file: %s đến %s\n", new_filename, receiver);
+    g_print("📤 Đã gửi yêu cầu gửi file mã hóa: %s đến %s\n", encrypted_file, receiver);
 
     if (send(sockfd, &file_size, sizeof(file_size), 0) == -1)
     {
@@ -334,7 +314,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         return;
     }
 
-    // --- GỬI NỘI DUNG FILE ---
     char buffer[BUFFER_SIZE];
     int bytes_read;
     long total_bytes_sent = 0;
@@ -355,7 +334,6 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     g_print("✅ Đã gửi file mã hóa: %s\n", encrypted_file);
     g_print("📏 Tổng số bytes đã gửi: %ld / %ld\n", total_bytes_sent, file_size);
 
-    // Đóng cửa sổ gửi file
     gtk_widget_destroy(window_send_file);
     window_send_file = NULL;
 }
