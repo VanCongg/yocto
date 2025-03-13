@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <pthread.h>
 #include <errno.h>
+#include <limits.h>
 #include "../include/aes.h"
 
 #define BUFFER_SIZE 4096
@@ -243,11 +244,13 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     }
 
     // Tạo file mã hóa trước khi gửi
-    char encrypted_file[256];
+    char encrypted_file[PATH_MAX]; // PATH_MAX là giới hạn an toàn
     snprintf(encrypted_file, sizeof(encrypted_file), "%s.enc", selected_filepath);
 
-    int result = aes_encrypt_file((const uint8_t *)selected_filepath, (const uint8_t *)encrypted_file,
-                                  (const uint8_t *)key, key_size);
+    int result = aes_encrypt_file((const uint8_t *)selected_filepath,
+                                  (const uint8_t *)encrypted_file,
+                                  (const uint8_t *)key, (AESKeyLength)key_size);
+
     if (result != 0)
     {
         g_print("❌ Lỗi khi mã hóa file!\n");
@@ -283,7 +286,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         send(sockfd, buffer, bytes_read, 0);
     }
     fclose(file);
-    g_print("✅ Đã gửi file đã mã hóa: %s\n", encrypted_file);
+    g_print("Đã gửi file đã mã hóa: %s\n", encrypted_file);
 
     // Đóng cửa sổ gửi file
     gtk_widget_destroy(window_send_file);
