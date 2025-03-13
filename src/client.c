@@ -258,10 +258,28 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         }
         g_print("📂 Đã tạo thư mục 'en/'\n");
     }
+    // Lấy tên file từ đường dẫn
+    const char *basename = g_path_get_basename(selected_filepath);
+
+    // Sao chép tên file để chỉnh sửa
+    char filename_no_ext[PATH_MAX];
+    strncpy(filename_no_ext, basename, sizeof(filename_no_ext) - 1);
+    filename_no_ext[sizeof(filename_no_ext) - 1] = '\0';
+
+    // Loại bỏ phần mở rộng
+    char *dot = strrchr(filename_no_ext, '.');
+    if (dot)
+    {
+        *dot = '\0';
+    }
+
+    g_print("📝 Tên file không có phần mở rộng: %s\n", filename_no_ext);
 
     // Định dạng tên file mã hóa
     char encrypted_file[PATH_MAX];
-    snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", new_filename);
+    snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
+    g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
+
     g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
 
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
