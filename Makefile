@@ -1,53 +1,60 @@
-# Compiler settings
 CC = gcc
-CFLAGS = -Iinclude -Wall -Wextra -std=c11
-LDFLAGS =
+CFLAGS = -Wall -Iinclude -g `pkg-config --cflags gtk+-3.0`
+LDFLAGS = `pkg-config --libs gtk+-3.0` -lpthread
 
-# Directories
 SRC_DIR = src
-INCLUDE_DIR = include
-BUILD_DIR = build
-TEST_DIR = tests
+OBJ_DIR = obj
+BIN_DIR = bin
 
-# Source files & object files
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
-DEPS = $(OBJS:.o=.d)
+# Tạo thư mục obj và bin nếu chưa có
+$(shell mkdir -p $(OBJ_DIR) $(BIN_DIR))
 
-# Output library
-TARGET = libaes.a
+# Biên dịch AES thành thư viện tĩnh
+$(OBJ_DIR)/aes.o: $(SRC_DIR)/aes.c include/aes.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: all clean test encrypt decrypt
+# Biên dịch mã nguồn của client
+$(OBJ_DIR)/client.o: $(SRC_DIR)/client.c include/aes.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Default build target
-all: $(BUILD_DIR)/$(TARGET)
+# Biên dịch mã nguồn của server
+$(OBJ_DIR)/server.o: $(SRC_DIR)/server.c include/aes.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Build static library
-$(BUILD_DIR)/$(TARGET): $(OBJS)
-	@mkdir -p $(BUILD_DIR)
-	ar rcs $@ $^
+# Biên dịch encrypt và decrypt
+$(OBJ_DIR)/encrypt.o: $(SRC_DIR)/encrypt.c include/aes.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -MMD -c $< -o $@
+$(OBJ_DIR)/decrypt.o: $(SRC_DIR)/decrypt.c include/aes.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Include dependency files
--include $(DEPS)
+# Build client (có GUI)
+client: $(OBJ_DIR)/client.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/client $(LDFLAGS)
 
-# Clean build files
+# Build server (có GUI)
+server: $(OBJ_DIR)/server.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/server $(LDFLAGS)
+
+# Build encrypt
+encrypt: $(OBJ_DIR)/encrypt.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/encrypt $(LDFLAGS)
+
+# Build decrypt
+decrypt: $(OBJ_DIR)/decrypt.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/decrypt $(LDFLAGS)
+
+# Build tất cả
+all: client server encrypt decrypt
+
+# Dọn dẹp file biên dịch
 clean:
-	rm -rf $(BUILD_DIR) $(TEST_DIR)/*.o $(TEST_DIR)/*.d $(TEST_DIR)/*.exe encrypt decrypt
+	rm -rf $(OBJ_DIR)/*.o $(BIN_DIR)/*
 
-# Run unit tests
-test: $(BUILD_DIR)/$(TARGET)
-	$(CC) $(CFLAGS) -o $(TEST_DIR)/test_aes $(TEST_DIR)/test_aes.c -L$(BUILD_DIR) -laes
-	$(TEST_DIR)/test_aes
+# Chạy chương trình client
+run-client: client
+	gdb --args ./bin/client
 
-# Build encryption program
-encrypt: $(BUILD_DIR)/$(TARGET)
-	$(CC) $(CFLAGS) -o encrypt encrypt.c -L$(BUILD_DIR) -laes
-
-# Build decryption program
-decrypt: $(BUILD_DIR)/$(TARGET)
-	$(CC) $(CFLAGS) -o decrypt decrypt.c -L$(BUILD_DIR) -laes
+# Chạy chương trình server
+run-server: server
+	./bin/server

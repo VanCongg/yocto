@@ -353,7 +353,7 @@ int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, cons
     uint8_t expandedKey[240];
     uint8_t normalizedKey[32];
 
-    // 🔍 Xóa dữ liệu rác trong normalizedKey
+    // 🔍 Xóa dữ liệu rác trong normalizedKey 
     memset(normalizedKey, 0, sizeof(normalizedKey));
 
     // 🔍 Copy key vào normalizedKey với kích thước chính xác
