@@ -242,6 +242,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         g_print("⚠️ Lỗi khi lấy độ dài key!\n");
         return;
     }
+
     g_print("🔍 File nguồn: %s\n", selected_filepath);
     g_print("🔍 Tên file mới: %s\n", new_filename);
     g_print("🔍 Người nhận: %s\n", receiver);
@@ -259,16 +260,25 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         *dot = '\0'; // Loại bỏ phần mở rộng
     }
 
+    g_print("📝 Tên file không có phần mở rộng: %s\n", filename_no_ext);
+
     // --- TẠO THƯ MỤC 'en/' (NẾU CHƯA TỒN TẠI) ---
     struct stat st = {0};
     if (stat("en", &st) == -1)
     {
-        mkdir("en", 0700);
+        if (mkdir("en", 0700) != 0)
+        {
+            perror("❌ Lỗi khi tạo thư mục 'en/'");
+            return;
+        }
+        g_print("📂 Đã tạo thư mục 'en/'\n");
     }
 
     // --- TẠO TÊN FILE MÃ HÓA ---
     char encrypted_file[PATH_MAX];
     snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
+
+    g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
 
     // --- MÃ HÓA FILE ---
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
@@ -280,13 +290,22 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         g_print("❌ Lỗi khi mã hóa file!\n");
         return;
     }
-    g_print("🔒 File đã mã hóa: %s\n", encrypted_file);
+    g_print("🔒 File đã mã hóa thành công: %s\n", encrypted_file);
+
+    // --- KIỂM TRA KÍCH THƯỚC FILE MÃ HÓA ---
+    struct stat encrypted_stat;
+    if (stat(encrypted_file, &encrypted_stat) != 0)
+    {
+        perror("❌ Không thể lấy thông tin file mã hóa");
+        return;
+    }
+    g_print("📏 Kích thước file mã hóa: %ld bytes\n", encrypted_stat.st_size);
 
     // --- MỞ FILE MÃ HÓA ĐỂ GỬI ---
     FILE *file = fopen(encrypted_file, "rb");
     if (!file)
     {
-        g_print("❌ Không thể mở file đã mã hóa: %s\n", encrypted_file);
+        perror("❌ Không thể mở file đã mã hóa");
         return;
     }
 
@@ -295,23 +314,46 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
+    g_print("📏 Kích thước file thực tế trước khi gửi: %ld bytes\n", file_size);
+
     // --- GỬI THÔNG TIN FILE ---
     char command[512];
     snprintf(command, sizeof(command), "SEND_FILE|%s|%s", new_filename, receiver);
-    send(sockfd, command, strlen(command), 0);
+    if (send(sockfd, command, strlen(command), 0) == -1)
+    {
+        perror("❌ Lỗi khi gửi thông tin file");
+        fclose(file);
+        return;
+    }
     g_print("📤 Đã gửi yêu cầu gửi file: %s đến %s\n", new_filename, receiver);
 
-    send(sockfd, &file_size, sizeof(file_size), 0);
+    if (send(sockfd, &file_size, sizeof(file_size), 0) == -1)
+    {
+        perror("❌ Lỗi khi gửi kích thước file");
+        fclose(file);
+        return;
+    }
 
     // --- GỬI NỘI DUNG FILE ---
     char buffer[BUFFER_SIZE];
     int bytes_read;
+    long total_bytes_sent = 0;
+
     while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, file)) > 0)
     {
-        send(sockfd, buffer, bytes_read, 0);
+        int bytes_sent = send(sockfd, buffer, bytes_read, 0);
+        if (bytes_sent == -1)
+        {
+            perror("❌ Lỗi khi gửi nội dung file");
+            fclose(file);
+            return;
+        }
+        total_bytes_sent += bytes_sent;
     }
     fclose(file);
-    g_print("✅ Đã gửi file đã mã hóa: %s\n", encrypted_file);
+
+    g_print("✅ Đã gửi file mã hóa: %s\n", encrypted_file);
+    g_print("📏 Tổng số bytes đã gửi: %ld / %ld\n", total_bytes_sent, file_size);
 
     // Đóng cửa sổ gửi file
     gtk_widget_destroy(window_send_file);
