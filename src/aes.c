@@ -348,32 +348,55 @@ void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySiz
  * @param key_size The size of the key (AES_128, AES_192, or AES_256)
  * @return 0 if the encryption is successful, -1 otherwise
  */
-int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size){
+int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size)
+{
     uint8_t expandedKey[240];
     uint8_t normalizedKey[32];
-    memcpy(normalizedKey, key, key_size);
-    NormalizeKey(normalizedKey, key_size, key_size);
+
+    // 🔍 Xóa dữ liệu rác trong normalizedKey
+    memset(normalizedKey, 0, sizeof(normalizedKey));
+
+    // 🔍 Copy key vào normalizedKey với kích thước chính xác
+    size_t key_bytes = key_size / 8; // Chuyển đổi từ bit -> byte (128-bit = 16 bytes)
+    memcpy(normalizedKey, key, key_bytes);
+
+    // 🔍 Chuẩn hóa khóa
+    NormalizeKey(normalizedKey, key_bytes, key_size);
     KeyExpansion(normalizedKey, expandedKey, key_size);
+
+    // Debug: In ra key đã chuẩn hóa
+    g_print("🔍 Normalized Key (%d bytes): ", key_bytes);
+    for (size_t i = 0; i < key_bytes; i++)
+    {
+        g_print("%02X ", normalizedKey[i]);
+    }
+    g_print("\n");
 
     FILE *in = fopen((const char *)input_file, "rb");
     FILE *out = fopen((const char *)output_file, "wb");
 
-    if (in == NULL || out == NULL) {
+    if (in == NULL || out == NULL)
+    {
+        g_print("❌ Lỗi: Không thể mở file.\n");
         return -1;
     }
 
-    uint8_t iv[16] = {0}; 
+    uint8_t iv[16] = {0};
     fwrite(iv, 1, 16, out);
 
     uint8_t block[16];
     size_t bytesRead;
-    while ((bytesRead = fread(block, 1, 16, in)) > 0) {
-        if (bytesRead < 16) {
-            for (size_t i = bytesRead; i < 16; i++) {
-                block[i] = ' '; // Simple space padding
+    while ((bytesRead = fread(block, 1, 16, in)) > 0)
+    {
+        if (bytesRead < 16)
+        {
+            for (size_t i = bytesRead; i < 16; i++)
+            {
+                block[i] = 16 - bytesRead; // Padding theo PKCS7
             }
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++)
+        {
             block[i] ^= iv[i];
         }
         AES_EncryptBlock(block, expandedKey, key_size);
@@ -381,19 +404,10 @@ int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, cons
         memcpy(iv, block, 16);
     }
 
-    if (bytesRead == 16) { 
-        memset(block, 16, 16);
-            for (int i = 0; i < 16; i++) {
-                block[i] ^= iv[i];
-            }
-        AES_EncryptBlock(block, expandedKey, key_size);
-        fwrite(block, 1, 16, out);
-    }
-
     fclose(in);
     fclose(out);
     return 0;
-};
+}
 
 /**
  * Decrypt a file using AES

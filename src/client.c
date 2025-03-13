@@ -279,6 +279,12 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     char encrypted_file[PATH_MAX];
     snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
     g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
+    printf("🔍 Key Length: %zu bytes (Expected: %d)\n", strlen(key), key_size / 8);
+    if (strlen(key) < key_size / 8)
+    {
+        printf("❌ LỖI: Key quá ngắn! AES-%d cần %d byte.\n", key_size, key_size / 8);
+        return;
+    }
 
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
                                   (const uint8_t *)encrypted_file,
