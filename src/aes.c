@@ -350,22 +350,24 @@ void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySiz
  */
 int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size)
 {
-    uint8_t expandedKey[240];
-    uint8_t normalizedKey[32];
+    uint8_t normalizedKey[32] = {0}; // Đặt giá trị 0 để tránh rác bộ nhớ
+    uint8_t expandedKey[240] = {0};  // Đảm bảo khởi tạo bộ nhớ
 
-    // 🔍 Xóa dữ liệu rác trong normalizedKey 
-    memset(normalizedKey, 0, sizeof(normalizedKey));
+    size_t key_bytes = key_size / 8; // Đổi bit -> byte (AES-128 = 16, AES-192 = 24, AES-256 = 32)
 
-    // 🔍 Copy key vào normalizedKey với kích thước chính xác
-    size_t key_bytes = key_size / 8; // Chuyển đổi từ bit -> byte (128-bit = 16 bytes)
+    // Kiểm tra nếu key quá dài
+    if (strlen((const char *)key) > key_bytes)
+    {
+        g_print("❌ Key quá dài! Chỉ chấp nhận %zu bytes cho AES-%d\n", key_bytes, key_size);
+        return -1;
+    }
+
     memcpy(normalizedKey, key, key_bytes);
-
-    // 🔍 Chuẩn hóa khóa
     NormalizeKey(normalizedKey, key_bytes, key_size);
     KeyExpansion(normalizedKey, expandedKey, key_size);
 
-    // Debug: In ra key đã chuẩn hóa
-    g_print("🔍 Normalized Key (%d bytes): ", key_bytes);
+    // Debug: In ra key chuẩn hóa
+    g_print("🔍 Normalized Key (%zu bytes): ", key_bytes);
     for (size_t i = 0; i < key_bytes; i++)
     {
         g_print("%02X ", normalizedKey[i]);
@@ -377,14 +379,14 @@ int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, cons
 
     if (in == NULL || out == NULL)
     {
-        g_print("❌ Lỗi: Không thể mở file.\n");
+        g_print("❌ Lỗi mở file!\n");
         return -1;
     }
 
     uint8_t iv[16] = {0};
     fwrite(iv, 1, 16, out);
 
-    uint8_t block[16];
+    uint8_t block[16] = {0};
     size_t bytesRead;
     while ((bytesRead = fread(block, 1, 16, in)) > 0)
     {
