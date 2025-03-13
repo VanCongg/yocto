@@ -350,18 +350,21 @@ void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySiz
  */
 int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size)
 {
-    if (key_size != AES_128 && key_size != AES_192 && key_size != AES_256)
+    int key_length = key_size / 8; // Chuyển bit thành byte
+    g_print("🔍 Key Length: %d bytes (Expected: %d)\n", (int)strlen((char *)key), key_length);
+
+    if (key_length != 16 && key_length != 24 && key_length != 32)
     {
-        printf("❌ Lỗi: Kích thước key không hợp lệ (%d-bit)\n", key_size);
+        g_print("❌ Lỗi: Kích thước key không hợp lệ (%d-bit)\n", key_size);
         return -1;
     }
 
-    // Chuẩn hóa key
     uint8_t expandedKey[240];
-    uint8_t normalizedKey[32];
-    memset(normalizedKey, 0, sizeof(normalizedKey));
-    memcpy(normalizedKey, key, key_size / 8); // Copy đúng số byte cần thiết
-    NormalizeKey(normalizedKey, key_size / 8, key_size);
+    uint8_t normalizedKey[32] = {0}; // Đảm bảo tất cả phần tử là 0
+
+    // Copy đúng số byte của key
+    memcpy(normalizedKey, key, key_length);
+    NormalizeKey(normalizedKey, key_length, key_size);
     KeyExpansion(normalizedKey, expandedKey, key_size);
 
     FILE *in = fopen((const char *)input_file, "rb");
