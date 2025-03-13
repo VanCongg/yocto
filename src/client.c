@@ -248,10 +248,29 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     g_print("🔍 Key: %s\n", key);
     g_print("🔍 Key Size: %d\n", key_size);
 
-    // Tạo file mã hóa trước khi gửi
-    char encrypted_file[PATH_MAX]; // PATH_MAX là giới hạn an toàn
-    snprintf(encrypted_file, sizeof(encrypted_file), "%s.enc", selected_filepath);
+    // --- XỬ LÝ TÊN FILE ---
+    char filename_no_ext[PATH_MAX];
+    strncpy(filename_no_ext, selected_filepath, sizeof(filename_no_ext) - 1);
+    filename_no_ext[sizeof(filename_no_ext) - 1] = '\0';
 
+    char *dot = strrchr(filename_no_ext, '.');
+    if (dot)
+    {
+        *dot = '\0'; // Loại bỏ phần mở rộng
+    }
+
+    // --- TẠO THƯ MỤC 'en/' (NẾU CHƯA TỒN TẠI) ---
+    struct stat st = {0};
+    if (stat("en", &st) == -1)
+    {
+        mkdir("en", 0700);
+    }
+
+    // --- TẠO TÊN FILE MÃ HÓA ---
+    char encrypted_file[PATH_MAX];
+    snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
+
+    // --- MÃ HÓA FILE ---
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
                                   (const uint8_t *)encrypted_file,
                                   (const uint8_t *)key, (AESKeyLength)key_size);
@@ -261,8 +280,9 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         g_print("❌ Lỗi khi mã hóa file!\n");
         return;
     }
+    g_print("🔒 File đã mã hóa: %s\n", encrypted_file);
 
-    // Mở file mã hóa để gửi
+    // --- MỞ FILE MÃ HÓA ĐỂ GỬI ---
     FILE *file = fopen(encrypted_file, "rb");
     if (!file)
     {
@@ -275,7 +295,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    // Gửi thông tin file
+    // --- GỬI THÔNG TIN FILE ---
     char command[512];
     snprintf(command, sizeof(command), "SEND_FILE|%s|%s", new_filename, receiver);
     send(sockfd, command, strlen(command), 0);
@@ -283,7 +303,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
 
     send(sockfd, &file_size, sizeof(file_size), 0);
 
-    // Gửi nội dung file
+    // --- GỬI NỘI DUNG FILE ---
     char buffer[BUFFER_SIZE];
     int bytes_read;
     while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, file)) > 0)
@@ -291,7 +311,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         send(sockfd, buffer, bytes_read, 0);
     }
     fclose(file);
-    g_print("Đã gửi file đã mã hóa: %s\n", encrypted_file);
+    g_print("✅ Đã gửi file đã mã hóa: %s\n", encrypted_file);
 
     // Đóng cửa sổ gửi file
     gtk_widget_destroy(window_send_file);
