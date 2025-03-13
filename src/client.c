@@ -242,6 +242,11 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         g_print("⚠️ Lỗi khi lấy độ dài key!\n");
         return;
     }
+    g_print("🔍 File nguồn: %s\n", selected_filepath);
+    g_print("🔍 Tên file mới: %s\n", new_filename);
+    g_print("🔍 Người nhận: %s\n", receiver);
+    g_print("🔍 Key: %s\n", key);
+    g_print("🔍 Key Size: %d\n", key_size);
 
     // Tạo file mã hóa trước khi gửi
     char encrypted_file[PATH_MAX]; // PATH_MAX là giới hạn an toàn
