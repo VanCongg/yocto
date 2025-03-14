@@ -327,7 +327,11 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         g_print("❌ Lỗi: Đường dẫn file quá dài!\n");
         return;
     }
-
+    char *filename = strrchr(encrypted_file, '/'); // Tìm dấu `/` cuối cùng
+    if (filename)
+        filename++; // Bỏ dấu `/` để lấy phần tên file
+    else
+        filename = encrypted_file; // Không có `/`, giữ nguyên tên
     snprintf(command, sizeof(command), "SEND_FILE|%s|%s", encrypted_file, receiver);
     if (send(sockfd, command, strlen(command), 0) == -1)
     {
