@@ -551,7 +551,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     int kq_decrupt = aes_decrypt_file((const uint8_t *)input_filepath,
                                   (const uint8_t *)output_filepath,
                                   (const uint8_t *)key,
-                                  key_size_enum);
+                                  (AESKeyLength)key_size_enum);
 
     if (kq_decrupt != 0)
     {
