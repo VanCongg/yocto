@@ -332,14 +332,14 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         filename++; // Bỏ dấu `/` để lấy phần tên file
     else
         filename = encrypted_file; // Không có `/`, giữ nguyên tên
-    snprintf(command, sizeof(command), "SEND_FILE|%s|%s", encrypted_file, receiver);
+    snprintf(command, sizeof(command), "SEND_FILE|%s|%s", filename, receiver);
     if (send(sockfd, command, strlen(command), 0) == -1)
     {
         perror("❌ Lỗi khi gửi thông tin file");
         fclose(file);
         return;
     }
-    g_print("📤 Đã gửi yêu cầu gửi file mã hóa: %s đến %s\n", encrypted_file, receiver);
+    g_print("📤 Đã gửi yêu cầu gửi file mã hóa: %s đến %s\n", filename, receiver);
 
     if (send(sockfd, &file_size, sizeof(file_size), 0) == -1)
     {
@@ -365,7 +365,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     }
     fclose(file);
 
-    g_print("✅ Đã gửi file mã hóa: %s\n", encrypted_file);
+    g_print("✅ Đã gửi file mã hóa: %s\n", filename);
     g_print("📏 Tổng số bytes đã gửi: %ld / %ld\n", total_bytes_sent, file_size);
 
     gtk_widget_destroy(window_send_file);
