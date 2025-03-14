@@ -459,28 +459,58 @@ void decrypt_file(GtkWidget *widget, gpointer data)
 {
     g_print("🔄 Bắt đầu quá trình giải mã...\n");
 
-    // Lấy đường dẫn file từ entry_filename
+    // Kiểm tra entry_filename có hợp lệ không
+    if (!entry_filename)
+    {
+        g_print("❌ Lỗi: entry_filename chưa được khởi tạo!\n");
+        return;
+    }
+
     const char *input_filepath = gtk_entry_get_text(GTK_ENTRY(entry_filename));
-    if (strlen(input_filepath) == 0)
+    if (!input_filepath || strlen(input_filepath) == 0)
     {
         g_print("⚠️ Lỗi: Chưa chọn file để giải mã!\n");
         return;
     }
     g_print("📂 File cần giải mã: %s\n", input_filepath);
 
-    // Lấy key từ entry_key
+    // Kiểm tra entry_key có hợp lệ không
+    if (!entry_key)
+    {
+        g_print("❌ Lỗi: entry_key chưa được khởi tạo!\n");
+        return;
+    }
+
     const char *key = gtk_entry_get_text(GTK_ENTRY(entry_key));
-    if (strlen(key) == 0)
+    if (!key || strlen(key) == 0)
     {
         g_print("⚠️ Lỗi: Chưa nhập key!\n");
         return;
     }
     g_print("🔑 Key nhập vào: %s\n", key);
 
-    // Lấy độ dài key từ combo_keysize
-    AESKeyLength key_size_enum;
-    const char *key_size_st = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(comboBox_keysize));
+    // Kiểm tra comboBox_keysize có hợp lệ không
+    if (!comboBox_keysize)
+    {
+        g_print("❌ Lỗi: comboBox_keysize chưa được khởi tạo!\n");
+        return;
+    }
 
+    gint active_index = gtk_combo_box_get_active(GTK_COMBO_BOX(comboBox_keysize));
+    if (active_index == -1)
+    {
+        g_print("❌ Lỗi: Chưa chọn độ dài key!\n");
+        return;
+    }
+
+    const char *key_size_st = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(comboBox_keysize));
+    if (!key_size_st)
+    {
+        g_print("❌ Lỗi: Không thể lấy độ dài key!\n");
+        return;
+    }
+
+    AESKeyLength key_size_enum;
     if (strcmp(key_size_st, "128") == 0)
     {
         key_size_enum = AES_128;
@@ -498,7 +528,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         g_print("❌ Lỗi: Giá trị key_size không hợp lệ!\n");
         return;
     }
-    g_print("🛠️ Độ dài key được chọn: %s-bit\n", key_size_enum);
+    g_print("🛠️ Độ dài key được chọn: %d-bit\n", key_size_enum);
 
     // Kiểm tra và tạo thư mục "de/"
     struct stat st = {0};
@@ -538,7 +568,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     int result = aes_decrypt_file((const uint8_t *)input_filepath,
                                   (const uint8_t *)output_filepath,
                                   (const uint8_t *)key,
-                                  (AESKeyLength)key_size_enum);
+                                  key_size_enum);
 
     if (result != 0)
     {
@@ -546,7 +576,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %s-bit\n", input_filepath, key, key_size_st);
+    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %d-bit\n", input_filepath, key, key_size_enum);
     g_print("📂 File đã được lưu tại: %s\n", output_filepath);
 
     // Đóng cửa sổ sau khi giải mã xong
