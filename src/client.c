@@ -525,25 +525,10 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
     else
     {
-        g_print("❌ Lỗi: Giá trị key_size không hợp lệ!\n");
+        g_print("Lỗi: Giá trị key_size không hợp lệ!\n");
         return;
     }
-    g_print("🛠️ Độ dài key được chọn: %d-bit\n", key_size_enum);
-
-    // Kiểm tra và tạo thư mục "de/"
-    struct stat st = {0};
-    if (stat("de", &st) == -1)
-    {
-        if (mkdir("de", 0700) == 0)
-        {
-            g_print("📁 Tạo thư mục 'de/' thành công\n");
-        }
-        else
-        {
-            g_print("❌ Lỗi khi tạo thư mục 'de/'!\n");
-            return;
-        }
-    }
+    g_print("Độ dài key được chọn: %d-bit\n", key_size_enum);
 
     // Tạo đường dẫn cho file output
     char output_filepath[512];
@@ -561,24 +546,19 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
     g_free(filename);
 
-    g_print("📁 File sẽ được lưu sau khi giải mã: %s\n", output_filepath);
-
     // Gọi hàm giải mã
     g_print("🔓 Đang tiến hành giải mã...\n");
-    int result = aes_decrypt_file((const uint8_t *)input_filepath,
+    int kq_decrupt = aes_decrypt_file((const uint8_t *)input_filepath,
                                   (const uint8_t *)output_filepath,
                                   (const uint8_t *)key,
                                   key_size_enum);
 
-    if (result != 0)
+    if (kq_decrupt != 0)
     {
         g_print("❌ Lỗi khi giải mã file!\n");
         return;
     }
-
     g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %d-bit\n", input_filepath, key, key_size_enum);
-    g_print("📂 File đã được lưu tại: %s\n", output_filepath);
-
     // Đóng cửa sổ sau khi giải mã xong
     if (window_decrypt)
     {
@@ -586,8 +566,6 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         gtk_widget_destroy(window_decrypt);
         window_decrypt = NULL;
     }
-
-    // Hiển thị thông báo thành công
     GtkWidget *dialog = gtk_message_dialog_new(NULL,
                                                GTK_DIALOG_MODAL,
                                                GTK_MESSAGE_INFO,

@@ -409,7 +409,6 @@ int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, cons
 int aes_decrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size) {
     uint8_t expandedKey[240];
     uint8_t normalizedKey[32];
-
     // Chuẩn hóa khóa
     memcpy(normalizedKey, key, key_size);
     NormalizeKey(normalizedKey, key_size, key_size);
