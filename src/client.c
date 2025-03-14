@@ -501,7 +501,25 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     // Tạo đường dẫn file out sau khi giải mã
     char *filename = g_path_get_basename(input_filepath);
     char output_filepath[512];
-    snprintf(output_filepath, sizeof(output_filepath), "de/%s", filename);
+
+    // Kiểm tra nếu file có đuôi .enc thì thay bằng .txt
+    if (g_str_has_suffix(filename, ".enc"))
+    {
+        // Loại bỏ ".enc" và thay bằng ".txt"
+        strncpy(output_filepath, filename, strlen(filename) - 4); // Bỏ 4 ký tự cuối (.enc)
+        output_filepath[strlen(filename) - 4] = '\0';             // Kết thúc chuỗi
+        strcat(output_filepath, ".txt");                          // Thêm ".txt"
+    }
+    else
+    {
+        // Nếu không có đuôi .enc, giữ nguyên nhưng thêm .txt
+        snprintf(output_filepath, sizeof(output_filepath), "%s.txt", filename);
+    }
+
+    // Đưa file vào thư mục "de/"
+    char final_output_filepath[512];
+    snprintf(final_output_filepath, sizeof(final_output_filepath), "de/%s", output_filepath);
+
     g_free(filename);
 
     // Gọi hàm giải mã
@@ -516,8 +534,18 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %s-bit\n", input_filepath, key, key_size_str);
-    g_print("📂 Lưu file giải mã vào %s\n", output_filepath);
+    // Hiển thị thông báo thành công
+    char success_message[512];
+    snprintf(success_message, sizeof(success_message),
+             "✅ Giải mã thành công!\n📂 File được lưu tại: %s", final_output_filepath);
+
+    GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window_decrypt),
+                                               GTK_DIALOG_MODAL,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "%s", success_message);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
 
     // Đóng cửa sổ sau khi giải mã xong
     gtk_widget_destroy(window_decrypt);
