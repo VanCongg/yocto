@@ -498,7 +498,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         g_print("❌ Lỗi: Giá trị key_size không hợp lệ!\n");
         return;
     }
-    g_print("🛠️ Độ dài key được chọn: %s-bit\n", key_size_st);
+    g_print("🛠️ Độ dài key được chọn: %s-bit\n", key_size_enum);
 
     // Kiểm tra và tạo thư mục "de/"
     struct stat st = {0};
