@@ -439,21 +439,13 @@ void on_choose_file_decrypt(GtkWidget *widget, gpointer data)
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
     {
-        char *filepath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
-        char *filename = g_path_get_basename(filepath);                
-        gtk_entry_set_text(GTK_ENTRY(entry_filename), filename);                
-        g_free(filepath);                                                       
-        g_free(filename);                                                  
+        char *filepath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        char *filename = g_path_get_basename(filepath);
+        gtk_entry_set_text(GTK_ENTRY(entry_filename), filename);
+        g_free(filepath);
+        g_free(filename);
     }
 
-    gtk_widget_destroy(dialog);
-    GtkWidget *dialog = gtk_message_dialog_new(NULL,
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Giải mã thành công!",
-                                               output_filepath);
-    gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 }
 
@@ -540,6 +532,14 @@ void decrypt_file(GtkWidget *widget, gpointer data)
 
     // Đóng cửa sổ sau khi giải mã xong
     gtk_widget_destroy(window_decrypt);
+    GtkWidget *dialog = gtk_message_dialog_new(NULL,
+                                               GTK_DIALOG_MODAL,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "Giải mã thành công!",
+                                               output_filepath);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
 }
 
 void open_decrypt_window(GtkWidget *widget, gpointer data)
