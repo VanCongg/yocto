@@ -234,30 +234,20 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
 
     if (strcmp(key_size_str, "128") == 0)
     {
-        key_size = AESKeyLength.AES_128;
+        key_size = AES_128;
     }
     else if (strcmp(key_size_str, "192") == 0)
     {
-        key_size = AESKeyLength.AES_192;
+        key_size = AES_192;
     }
     else if (strcmp(key_size_str, "256") == 0)
     {
-        key_size = AESKeyLength.AES_256;
+        key_size = AES_256;
     }
     else
     {
         printf("Lỗi: Giá trị key_size không hợp lệ!\n");
         return -1;
-    }
-
-    if (key_size_str)
-    {
-        key_size = atoi(key_size_str);
-    }
-    else
-    {
-        g_print("⚠️ Lỗi khi lấy độ dài key!\n");
-        return;
     }
 
     g_print("🔍 File nguồn: %s\n", selected_filepath);
