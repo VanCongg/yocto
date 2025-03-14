@@ -133,14 +133,14 @@ void *client_handler(void *arg)
 
             // Tạo đường dẫn lưu file
             char filepath[512];
-            const char *dir_path = "./received_files";
+            const char *dir_path = "./server_en";
             // Kiểm tra và tạo thư mục nếu chưa tồn tại
             struct stat st;
             if (stat(dir_path, &st) == -1)
             {
                 mkdir(dir_path, 0777); // Tạo thư mục với quyền truy cập đầy đủ
             }
-            snprintf(filepath, sizeof(filepath), "./received_files/%s", filename);
+            snprintf(filepath, sizeof(filepath), "./server_en/%s", filename);
             FILE *file = fopen(filepath, "wb");
             if (!file)
             {
