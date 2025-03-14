@@ -173,6 +173,13 @@ void sendfile_back_to_main(GtkWidget *widget, gpointer data)
     gtk_widget_hide(window_send_file);
     gtk_widget_show_all(window_main);
 }
+void decrypt_back_to_main(GtkWidget *widget, gpointer data)
+{
+    if (window_decrypt != NULL)
+    {
+        gtk_widget_hide(window_decrypt); 
+    }
+}
 char *selected_filepath = NULL;
 void on_choose_file_clicked(GtkWidget *widget, gpointer data)
 {
