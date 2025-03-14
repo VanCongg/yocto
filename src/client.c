@@ -500,7 +500,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     {
         mkdir("de", 0700);
     }
-
+    char output_filepath[512];
     char *filename = g_path_get_basename(input_filepath);
     if (g_str_has_suffix(filename, ".enc"))
     {
