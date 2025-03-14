@@ -468,6 +468,7 @@ void open_received_file_window(GtkWidget *widget, gpointer data)
 void select_file(GtkWidget *widget, gpointer data)
 {
     strcpy(selected_file, (char *)data);
+    snprintf(selected_filepath, sizeof(selected_filepath), "received_files/%s", selected_file);
 }
 
 // Mở cửa sổ giải mã
@@ -506,8 +507,6 @@ void open_decrypt_window(GtkWidget *widget, gpointer data)
 
     gtk_widget_show_all(window_decrypt);
 }
-
-// Xử lý giải mã file
 void decrypt_file(GtkWidget *widget, gpointer data)
 {
     const char *key = gtk_entry_get_text(GTK_ENTRY(entry_key));
@@ -517,43 +516,50 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    AESKeyLength key_size_de;
-    const char *key_size_de = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combobox_key_size));
+    AESKeyLength key_size_enum;
+    const char *key_size_str = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combobox_key_size));
 
-    if (strcmp(key_size_de, "128") == 0)
+    if (strcmp(key_size_str, "128") == 0)
     {
-        key_size_de = AES_128;
+        key_size_enum = AES_128;
     }
-    else if (strcmp(key_size_de, "192") == 0)
+    else if (strcmp(key_size_str, "192") == 0)
     {
-        key_size_de = AES_192;
+        key_size_enum = AES_192;
     }
-    else if (strcmp(key_size_de, "256") == 0)
+    else if (strcmp(key_size_str, "256") == 0)
     {
-        key_size_de = AES_256;
+        key_size_enum = AES_256;
     }
     else
     {
-        printf("Lỗi: Giá trị key_size không hợp lệ!\n");
-        return -1;
+        g_print("Lỗi: Giá trị key_size không hợp lệ!\n");
+        return;
     }
 
     // Giả lập giải mã
-    int result = aes_encrypt_file((const uint8_t *)selected_filepath,
-                                  (const uint8_t *)encrypted_file,
-                                  (const uint8_t *)key, (AESKeyLength)key_size_de);
+    int result = aes_decrypt_file((const uint8_t *)selected_filepath,
+                                  (const uint8_t *)selected_file,
+                                  (const uint8_t *)key, key_size_enum);
     if (result != 0)
     {
         g_print("❌ Lỗi khi giải mã file!\n");
         return;
     }
-    
-    g_print("Giải mã file %s với key: %s, độ dài: %d-bit\n", selected_file, key, key_size_de);
+
+    g_print("✅ Giải mã file %s với key: %s, độ dài: %d-bit\n", selected_file, key, key_size_enum);
+
+    // Kiểm tra và tạo thư mục "de/"
+    struct stat st = {0};
+    if (stat("de", &st) == -1)
+    {
+        mkdir("de", 0700);
+    }
 
     // Lưu file vào thư mục `de`
     char decrypted_path[512];
     snprintf(decrypted_path, sizeof(decrypted_path), "de/%s", selected_file);
-    g_print("Lưu file vào %s\n", decrypted_path);
+    g_print("📂 Lưu file vào %s\n", decrypted_path);
 
     gtk_widget_destroy(window_decrypt);
 }
