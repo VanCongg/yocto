@@ -439,13 +439,24 @@ void on_choose_file_decrypt(GtkWidget *widget, gpointer data)
 
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
     {
-        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-        gtk_entry_set_text(GTK_ENTRY(entry_filename), filename);
-        g_free(filename);
+        char *filepath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog)); 
+        char *filename = g_path_get_basename(filepath);                
+        gtk_entry_set_text(GTK_ENTRY(entry_filename), filename);                
+        g_free(filepath);                                                       
+        g_free(filename);                                                  
     }
 
     gtk_widget_destroy(dialog);
+    GtkWidget *dialog = gtk_message_dialog_new(NULL,
+                                               GTK_DIALOG_MODAL,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "Giải mã thành công!",
+                                               output_filepath);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
 }
+
 void decrypt_back_to_main(GtkWidget *widget, gpointer data)
 {
     gtk_widget_destroy(window_decrypt); // Đóng cửa sổ giải mã
@@ -498,31 +509,25 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         mkdir("de", 0700);
     }
 
-    // Xử lý tên file đầu ra
     char *filename = g_path_get_basename(input_filepath);
-    char output_filepath[512];
-
     if (g_str_has_suffix(filename, ".enc"))
     {
-        strncpy(output_filepath, filename, strlen(filename) - 4);
-        output_filepath[strlen(filename) - 4] = '\0';
-        strcat(output_filepath, ".txt");
+        size_t len = strlen(filename) - 4; // Bỏ ".enc"
+        char *new_filename = g_strndup(filename, len);
+        snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", new_filename);
+        g_free(new_filename);
     }
     else
     {
-        snprintf(output_filepath, sizeof(output_filepath), "%s.txt", filename);
+        snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", filename);
     }
-
-    char final_output_filepath[512];
-    snprintf(final_output_filepath, sizeof(final_output_filepath), "de/%s", output_filepath);
-
     g_free(filename);
 
     // Gọi hàm giải mã
     int result = aes_decrypt_file((const uint8_t *)input_filepath,
-                                  (const uint8_t *)final_output_filepath,
+                                  (const uint8_t *)output_filepath,
                                   (const uint8_t *)key,
-                                  key_size_enum);
+                                  (AESKeyLength)key_size_enum);
 
     if (result != 0)
     {
@@ -530,20 +535,10 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    // Hiển thị thông báo thành công
-    char success_message[512];
-    snprintf(success_message, sizeof(success_message),
-             "✅ Giải mã thành công!\n📂 File được lưu tại: %s", final_output_filepath);
+    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %s-bit\n", input_filepath, key, key_size_str);
+    g_print("📂 Lưu file giải mã vào %s\n", output_filepath);
 
-    GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window_decrypt),
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "%s", success_message);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-
-    // Đóng cửa sổ giải mã
+    // Đóng cửa sổ sau khi giải mã xong
     gtk_widget_destroy(window_decrypt);
 }
 
