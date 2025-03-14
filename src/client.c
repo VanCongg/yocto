@@ -234,15 +234,15 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
 
     if (strcmp(key_size_str, "128") == 0)
     {
-        key_size = AES_128;
+        key_size = AESKeyLength.AES_128;
     }
     else if (strcmp(key_size_str, "192") == 0)
     {
-        key_size = AES_192;
+        key_size = AESKeyLength.AES_192;
     }
     else if (strcmp(key_size_str, "256") == 0)
     {
-        key_size = AES_256;
+        key_size = AESKeyLength.AES_256;
     }
     else
     {
