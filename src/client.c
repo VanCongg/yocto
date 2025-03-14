@@ -517,12 +517,38 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    int key_size_index = gtk_combo_box_get_active(GTK_COMBO_BOX(combobox_key_size));
-    int key_sizes[] = {128, 192, 256};
-    int key_size = key_sizes[key_size_index];
+    AESKeyLength key_size_de;
+    const char *key_size_de = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combobox_key_size));
+
+    if (strcmp(key_size_de, "128") == 0)
+    {
+        key_size_de = AES_128;
+    }
+    else if (strcmp(key_size_de, "192") == 0)
+    {
+        key_size_de = AES_192;
+    }
+    else if (strcmp(key_size_de, "256") == 0)
+    {
+        key_size_de = AES_256;
+    }
+    else
+    {
+        printf("Lỗi: Giá trị key_size không hợp lệ!\n");
+        return -1;
+    }
 
     // Giả lập giải mã
-    g_print("Giải mã file %s với key: %s, độ dài: %d-bit\n", selected_file, key, key_size);
+    int result = aes_encrypt_file((const uint8_t *)selected_filepath,
+                                  (const uint8_t *)encrypted_file,
+                                  (const uint8_t *)key, (AESKeyLength)key_size_de);
+    if (result != 0)
+    {
+        g_print("❌ Lỗi khi giải mã file!\n");
+        return;
+    }
+    
+    g_print("Giải mã file %s với key: %s, độ dài: %d-bit\n", selected_file, key, key_size_de);
 
     // Lưu file vào thư mục `de`
     char decrypted_path[512];
