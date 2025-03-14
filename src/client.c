@@ -479,17 +479,17 @@ void decrypt_file(GtkWidget *widget, gpointer data)
 
     // Lấy độ dài key từ combo_keysize
     AESKeyLength key_size_enum;
-    const char *key_size_str = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_keysize));
+    const char *key_size_st = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_keysize));
 
-    if (strcmp(key_size_str, "128") == 0)
+    if (strcmp(key_size_st, "128") == 0)
     {
         key_size_enum = AES_128;
     }
-    else if (strcmp(key_size_str, "192") == 0)
+    else if (strcmp(key_size_st, "192") == 0)
     {
         key_size_enum = AES_192;
     }
-    else if (strcmp(key_size_str, "256") == 0)
+    else if (strcmp(key_size_st, "256") == 0)
     {
         key_size_enum = AES_256;
     }
