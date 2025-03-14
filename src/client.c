@@ -466,13 +466,24 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    const char *input_filepath = gtk_entry_get_text(GTK_ENTRY(entry_filename));
-    if (!input_filepath || strlen(input_filepath) == 0)
+    const char *selected_filename = gtk_entry_get_text(GTK_ENTRY(entry_filename));
+    if (!selected_filename || strlen(selected_filename) == 0)
     {
         g_print("⚠️ Lỗi: Chưa chọn file để giải mã!\n");
         return;
     }
+
+    // Tạo đường dẫn file đầu vào
+    char input_filepath[512];
+    snprintf(input_filepath, sizeof(input_filepath), "received_files/%s", selected_filename);
     g_print("📂 File cần giải mã: %s\n", input_filepath);
+
+    // Kiểm tra file đầu vào có tồn tại không
+    if (access(input_filepath, F_OK) == -1)
+    {
+        g_print("❌ Lỗi mở file đầu vào: %s không tồn tại!\n", input_filepath);
+        return;
+    }
 
     // Kiểm tra entry_key có hợp lệ không
     if (!entry_key)
@@ -525,47 +536,49 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
     else
     {
-        g_print("Lỗi: Giá trị key_size không hợp lệ!\n");
+        g_print("❌ Lỗi: Giá trị key_size không hợp lệ!\n");
         return;
     }
-    g_print("Độ dài key được chọn: %d-bit\n", key_size_enum);
+    g_print("🔑 Độ dài key được chọn: %d-bit\n", key_size_enum);
+
+    // Tạo thư mục `de/` nếu chưa có
+    struct stat st = {0};
+    if (stat("de", &st) == -1)
+    {
+        mkdir("de", 0700);
+    }
 
     // Tạo đường dẫn cho file output
     char output_filepath[512];
-    char *filename = g_path_get_basename(input_filepath);
-    if (g_str_has_suffix(filename, ".enc"))
+    if (g_str_has_suffix(selected_filename, ".enc"))
     {
-        size_t len = strlen(filename) - 4; // Bỏ ".enc"
-        char *new_filename = g_strndup(filename, len);
+        size_t len = strlen(selected_filename) - 4; // Bỏ ".enc"
+        char *new_filename = g_strndup(selected_filename, len);
         snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", new_filename);
         g_free(new_filename);
     }
     else
     {
-        snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", filename);
+        snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", selected_filename);
     }
-    g_free(filename);
+    g_print("📂 File đầu ra: %s\n", output_filepath);
 
     // Gọi hàm giải mã
     g_print("🔓 Đang tiến hành giải mã...\n");
-    int kq_decrupt = aes_decrypt_file((const uint8_t *)input_filepath,
-                                  (const uint8_t *)output_filepath,
-                                  (const uint8_t *)key,
-                                  (AESKeyLength)key_size_enum);
-    g_print("🔓 Kết quả giải mã: %d\n", kq_decrupt);
-    if (kq_decrupt != 0)
+    int decrypt_result = aes_decrypt_file((const uint8_t *)input_filepath,
+                                          (const uint8_t *)output_filepath,
+                                          (const uint8_t *)key,
+                                          (AESKeyLength)key_size_enum);
+    g_print("🔓 Kết quả giải mã: %d\n", decrypt_result);
+    if (decrypt_result != 0)
     {
         g_print("❌ Lỗi khi giải mã file!\n");
         return;
     }
+
     g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %d-bit\n", input_filepath, key, key_size_enum);
-    // Đóng cửa sổ sau khi giải mã xong
-    if (window_decrypt)
-    {
-        g_print("❎ Đóng cửa sổ giải mã...\n");
-        gtk_widget_destroy(window_decrypt);
-        window_decrypt = NULL;
-    }
+
+    // Hiển thị thông báo thành công
     GtkWidget *dialog = gtk_message_dialog_new(NULL,
                                                GTK_DIALOG_MODAL,
                                                GTK_MESSAGE_INFO,
