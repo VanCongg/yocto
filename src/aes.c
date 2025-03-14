@@ -350,57 +350,48 @@ void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySiz
  */
 int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size)
 {
-    int key_length = key_size / 8; // Chuyển bit thành byte
-    g_print("🔍 Key Length: %d bytes (Expected: %d)\n", (int)strlen((char *)key), key_length);
-
-    if (key_length != 16 && key_length != 24 && key_length != 32)
-    {
-        g_print("❌ Lỗi: Kích thước key không hợp lệ (%d-bit)\n", key_size);
-        return -1;
-    }
-
     uint8_t expandedKey[240];
-    uint8_t normalizedKey[32] = {0}; // Đảm bảo tất cả phần tử là 0
-
-    // Copy đúng số byte của key
-    memcpy(normalizedKey, key, key_length);
-    NormalizeKey(normalizedKey, key_length, key_size);
+    uint8_t normalizedKey[32] = {0}; // Đảm bảo đủ dung lượng
+    memcpy(normalizedKey, key, key_size);
+    NormalizeKey(normalizedKey, key_size, key_size);
     KeyExpansion(normalizedKey, expandedKey, key_size);
 
     FILE *in = fopen((const char *)input_file, "rb");
     FILE *out = fopen((const char *)output_file, "wb");
-
-    if (!in)
+    if (in == NULL || out == NULL)
     {
-        perror("❌ Lỗi mở file đầu vào");
-        return -1;
-    }
-    if (!out)
-    {
-        perror("❌ Lỗi mở file đầu ra");
-        fclose(in);
+        if (out)
+            fclose(out);
         return -1;
     }
 
-    uint8_t iv[16] = {0};
+    uint8_t iv[16];
+    srand(time(NULL));
+    for (int i = 0; i < 16; i++)
+        iv[i] = rand() % 256;
     fwrite(iv, 1, 16, out);
 
     uint8_t block[16];
     size_t bytesRead;
-    while ((bytesRead = fread(block, 1, 16, in)) > 0)
+    while ((bytesRead = fread(block, 1, 16, in)) == 16)
     {
-        if (bytesRead < 16)
-        {
-            memset(block + bytesRead, 16 - bytesRead, 16 - bytesRead); // PKCS7 padding
-        }
         for (int i = 0; i < 16; i++)
-        {
             block[i] ^= iv[i];
-        }
         AES_EncryptBlock(block, expandedKey, key_size);
         fwrite(block, 1, 16, out);
         memcpy(iv, block, 16);
     }
+
+    // Thêm padding chuẩn PKCS#7 nếu cần
+    uint8_t padding = 16 - bytesRead;
+    for (size_t i = bytesRead; i < 16; i++)
+    {
+        block[i] = padding;
+    }
+    for (int i = 0; i < 16; i++)
+        block[i] ^= iv[i];
+    AES_EncryptBlock(block, expandedKey, key_size);
+    fwrite(block, 1, 16, out);
 
     fclose(in);
     fclose(out);
