@@ -402,7 +402,7 @@ void open_send_file_window(GtkWidget *widget, gpointer data)
 
     // Hàng 4: Dropdown chọn độ dài key + nút chọn file
     GtkWidget *hbox_key = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    comboB_keysize = gtk_combo_box_text_new();
+    combo_keysize = gtk_combo_box_text_new();
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "128");
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "192");
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "256");
