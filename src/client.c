@@ -498,25 +498,21 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         mkdir("de", 0700);
     }
 
-    // Tạo đường dẫn file out sau khi giải mã
+    // Xử lý tên file đầu ra
     char *filename = g_path_get_basename(input_filepath);
     char output_filepath[512];
 
-    // Kiểm tra nếu file có đuôi .enc thì thay bằng .txt
     if (g_str_has_suffix(filename, ".enc"))
     {
-        // Loại bỏ ".enc" và thay bằng ".txt"
-        strncpy(output_filepath, filename, strlen(filename) - 4); // Bỏ 4 ký tự cuối (.enc)
-        output_filepath[strlen(filename) - 4] = '\0';             // Kết thúc chuỗi
-        strcat(output_filepath, ".txt");                          // Thêm ".txt"
+        strncpy(output_filepath, filename, strlen(filename) - 4);
+        output_filepath[strlen(filename) - 4] = '\0';
+        strcat(output_filepath, ".txt");
     }
     else
     {
-        // Nếu không có đuôi .enc, giữ nguyên nhưng thêm .txt
         snprintf(output_filepath, sizeof(output_filepath), "%s.txt", filename);
     }
 
-    // Đưa file vào thư mục "de/"
     char final_output_filepath[512];
     snprintf(final_output_filepath, sizeof(final_output_filepath), "de/%s", output_filepath);
 
@@ -524,9 +520,9 @@ void decrypt_file(GtkWidget *widget, gpointer data)
 
     // Gọi hàm giải mã
     int result = aes_decrypt_file((const uint8_t *)input_filepath,
-                                  (const uint8_t *)output_filepath,
+                                  (const uint8_t *)final_output_filepath,
                                   (const uint8_t *)key,
-                                  (AESKeyLength)key_size_enum);
+                                  key_size_enum);
 
     if (result != 0)
     {
@@ -547,7 +543,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 
-    // Đóng cửa sổ sau khi giải mã xong
+    // Đóng cửa sổ giải mã
     gtk_widget_destroy(window_decrypt);
 }
 
