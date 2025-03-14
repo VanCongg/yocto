@@ -498,7 +498,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         g_print("❌ Lỗi: Giá trị key_size không hợp lệ!\n");
         return;
     }
-    g_print("🛠️ Độ dài key được chọn: %s-bit\n", key_size_str);
+    g_print("🛠️ Độ dài key được chọn: %s-bit\n", key_size_st);
 
     // Kiểm tra và tạo thư mục "de/"
     struct stat st = {0};
@@ -546,7 +546,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %s-bit\n", input_filepath, key, key_size_str);
+    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %s-bit\n", input_filepath, key, key_size_st);
     g_print("📂 File đã được lưu tại: %s\n", output_filepath);
 
     // Đóng cửa sổ sau khi giải mã xong
