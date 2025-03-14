@@ -31,7 +31,7 @@ GtkWidget *window_decrypt, *entry_key, *combobox_key_size;
 GtkWidget *combo_keysize;
 GtkWidget *entry_key;
 GtkWidget *window_decrypt;
-
+GtkWidget *comboBox_keysize;
 char selected_file[256] = "";
 void select_file(GtkWidget *widget, gpointer data);
 void open_decrypt_window(GtkWidget *widget, gpointer data);
