@@ -406,11 +406,17 @@ int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, cons
  * @param key_size The size of the key (AES_128, AES_192, or AES_256)
  * @return 0 if the decryption is successful, -1 otherwise
  */
-int aes_decrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size) {
+int aes_decrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size)
+{
+    printf("🔄 Bắt đầu giải mã file: %s\n", input_file);
+
     uint8_t expandedKey[240];
     uint8_t normalizedKey[32];
+
     // Chuẩn hóa khóa
     memcpy(normalizedKey, key, key_size);
+    printf("🔑 Key nhập vào: %s (size: %d)\n", key, key_size);
+
     NormalizeKey(normalizedKey, key_size, key_size);
     KeyExpansion(normalizedKey, expandedKey, key_size);
 
@@ -418,40 +424,75 @@ int aes_decrypt_file(const uint8_t *input_file, const uint8_t *output_file, cons
     FILE *in = fopen((const char *)input_file, "rb");
     FILE *out = fopen((const char *)output_file, "wb");
 
-    if (in == NULL || out == NULL) {
+    if (in == NULL)
+    {
+        perror("❌ Lỗi mở file đầu vào");
+        return -1;
+    }
+    if (out == NULL)
+    {
+        perror("❌ Lỗi mở file đầu ra");
+        fclose(in);
         return -1;
     }
 
     // Đọc IV từ đầu file mã hóa
-      uint8_t iv[16];
-    fread(iv, 1, 16, in);  // Đọc IV từ file
+    uint8_t iv[16];
+    size_t iv_read = fread(iv, 1, 16, in);
+    if (iv_read != 16)
+    {
+        printf("❌ Lỗi đọc IV! Chỉ đọc được %zu byte\n", iv_read);
+        fclose(in);
+        fclose(out);
+        return -1;
+    }
+    printf("🛠️ IV đọc được: ");
+    for (int i = 0; i < 16; i++)
+    {
+        printf("%02X ", iv[i]);
+    }
+    printf("\n");
 
     uint8_t block[16], prevCipher[16];
 
     size_t bytesRead;
-    while ((bytesRead = fread(block, 1, 16, in)) == 16) {
-        memcpy(prevCipher, block, 16);  // Lưu ciphertext trước khi giải mã
+    while ((bytesRead = fread(block, 1, 16, in)) == 16)
+    {
+        memcpy(prevCipher, block, 16); // Lưu ciphertext trước khi giải mã
 
-        AES_DecryptBlock(block, expandedKey, key_size);  // Giải mã AES
+        AES_DecryptBlock(block, expandedKey, key_size); // Giải mã AES
 
         // XOR với IV để khôi phục plaintext
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++)
+        {
             block[i] ^= iv[i];
         }
 
-        fwrite(block, 1, 16, out);  // Ghi dữ liệu đã giải mã ra file
+        fwrite(block, 1, 16, out); // Ghi dữ liệu đã giải mã ra file
 
-        memcpy(iv, prevCipher, 16);  // Cập nhật IV từ ciphertext gốc
+        memcpy(iv, prevCipher, 16); // Cập nhật IV từ ciphertext gốc
     }
-    //kiểm tra padding
+
+    // Kiểm tra padding
+    printf("📌 Kiểm tra padding...\n");
     int i = 15;
-    while (block[i]!= ' ' && i >= 0)
+    while (block[i] != ' ' && i >= 0)
     {
         i--;
     }
-    ftruncate(fileno(out), ftell(out) - (16 - i));  // Cắt bớt dữ liệu thừa
+    if (i < 0)
+    {
+        printf("⚠️ Không tìm thấy padding hợp lệ!\n");
+    }
+    else
+    {
+        size_t bytesToTruncate = 16 - i;
+        printf("🛠️ Cắt bỏ %zu byte padding\n", bytesToTruncate);
+        ftruncate(fileno(out), ftell(out) - bytesToTruncate);
+    }
 
     fclose(in);
     fclose(out);
+    printf("✅ Giải mã hoàn tất!\n");
     return 0;
 }
