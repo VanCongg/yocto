@@ -351,7 +351,7 @@ void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySiz
 int aes_encrypt_file(const uint8_t *input_file, const uint8_t *output_file, const uint8_t *key, AESKeyLength key_size)
 {
     uint8_t expandedKey[240];
-    uint8_t normalizedKey[32] = {0}; // Đảm bảo đủ dung lượng
+    uint8_t normalizedKey[32];
     memcpy(normalizedKey, key, key_size);
     NormalizeKey(normalizedKey, key_size, key_size);
     KeyExpansion(normalizedKey, expandedKey, key_size);

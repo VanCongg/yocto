@@ -229,8 +229,20 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         return;
     }
 
-    int key_size;
+    AESKeyLength key_size;
     const char *key_size_str = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_keysize));
+    switch (key_size_str)
+    {
+    case "128":
+        key_size = AESKeyLength.AES_128;
+        break;
+    case "192":
+        key_size = AESKeyLength.AES_192;
+        break;
+    case "256":
+        key_size = AESKeyLength.AES_256;
+        break;
+    }
     if (key_size_str)
     {
         key_size = atoi(key_size_str);
