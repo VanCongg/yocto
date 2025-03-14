@@ -173,13 +173,6 @@ void sendfile_back_to_main(GtkWidget *widget, gpointer data)
     gtk_widget_hide(window_send_file);
     gtk_widget_show_all(window_main);
 }
-void decrypt_back_to_main(GtkWidget *widget, gpointer data)
-{
-    if (window_decrypt != NULL)
-    {
-        gtk_widget_hide(window_decrypt); 
-    }
-}
 char *selected_filepath = NULL;
 void on_choose_file_clicked(GtkWidget *widget, gpointer data)
 {
@@ -431,6 +424,28 @@ void open_send_file_window(GtkWidget *widget, gpointer data)
     g_signal_connect(window_send_file, "destroy", G_CALLBACK(gtk_widget_hide), NULL);
     gtk_widget_show_all(window_send_file);
 }
+void on_choose_file_decrypt(GtkWidget *widget, gpointer data)
+{
+    GtkWidget *dialog;
+    dialog = gtk_file_chooser_dialog_new("Chọn file để giải mã",
+                                         GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+                                         GTK_FILE_CHOOSER_ACTION_OPEN,
+                                         "_Hủy", GTK_RESPONSE_CANCEL,
+                                         "_Chọn", GTK_RESPONSE_ACCEPT,
+                                         NULL);
+
+    // Đặt thư mục mặc định là "received_files/"
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), "received_files");
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
+    {
+        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        gtk_entry_set_text(GTK_ENTRY(entry_filename), filename);
+        g_free(filename);
+    }
+
+    gtk_widget_destroy(dialog);
+}
 
 void decrypt_file(GtkWidget *widget, gpointer data)
 {
@@ -489,7 +504,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     int result = aes_decrypt_file((const uint8_t *)input_filepath,
                                   (const uint8_t *)output_filepath,
                                   (const uint8_t *)key,
-                                  key_size_enum);
+                                  (AESKeyLength)key_size_enum);
 
     if (result != 0)
     {
@@ -541,7 +556,7 @@ void open_decrypt_window(GtkWidget *widget, gpointer data)
     gtk_box_pack_start(GTK_BOX(hbox_key), combo_keysize, TRUE, TRUE, 5);
 
     GtkWidget *btn_choose_file = gtk_button_new_with_label("Chọn file");
-    g_signal_connect(btn_choose_file, "clicked", G_CALLBACK(on_choose_file_clicked), NULL);
+    g_signal_connect(btn_choose_file, "clicked", G_CALLBACK(on_choose_file_decrypt), NULL);
     gtk_box_pack_start(GTK_BOX(hbox_key), btn_choose_file, FALSE, FALSE, 5);
     gtk_box_pack_start(GTK_BOX(vbox), hbox_key, FALSE, FALSE, 5);
 
@@ -570,7 +585,7 @@ void open_main_window()
     GtkWidget *btn_send = gtk_button_new_with_label("Gửi file");
     g_signal_connect(btn_send, "clicked", G_CALLBACK(open_send_file_window), NULL);
 
-    GtkWidget *btn_received = gtk_button_new_with_label("File nhận");
+    GtkWidget *btn_received = gtk_button_new_with_label("Giải mã");
     g_signal_connect(btn_received, "clicked", G_CALLBACK(open_decrypt_window), NULL);
 
     GtkWidget *btn_logout = gtk_button_new_with_label("Đăng xuất");
