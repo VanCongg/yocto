@@ -446,6 +446,10 @@ void on_choose_file_decrypt(GtkWidget *widget, gpointer data)
 
     gtk_widget_destroy(dialog);
 }
+void decrypt_back_to_main(GtkWidget *widget, gpointer data)
+{
+    gtk_widget_destroy(window_decrypt); // Đóng cửa sổ giải mã
+}
 
 void decrypt_file(GtkWidget *widget, gpointer data)
 {
