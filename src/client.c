@@ -552,7 +552,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
                                   (const uint8_t *)output_filepath,
                                   (const uint8_t *)key,
                                   (AESKeyLength)key_size_enum);
-
+    g_print("🔓 Kết quả giải mã: %d\n", kq_decrupt);
     if (kq_decrupt != 0)
     {
         g_print("❌ Lỗi khi giải mã file!\n");
