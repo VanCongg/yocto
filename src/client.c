@@ -479,7 +479,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
 
     // Lấy độ dài key từ combo_keysize
     AESKeyLength key_size_enum;
-    const char *key_size_st = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_keysize));
+    const char *key_size_st = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(keysize));
 
     if (strcmp(key_size_st, "128") == 0)
     {
@@ -597,12 +597,12 @@ void open_decrypt_window(GtkWidget *widget, gpointer data)
 
     // Hàng 4: Dropdown chọn độ dài key + nút chọn file
     GtkWidget *hbox_key = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    combo_keysize = gtk_combo_box_text_new();
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "128");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "192");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "256");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_keysize), 0);
-    gtk_box_pack_start(GTK_BOX(hbox_key), combo_keysize, TRUE, TRUE, 5);
+    keysize = gtk_combo_box_text_new();
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(keysize), NULL, "128");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(keysize), NULL, "192");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(keysize), NULL, "256");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(keysize), 0);
+    gtk_box_pack_start(GTK_BOX(hbox_key), keysize, TRUE, TRUE, 5);
 
     GtkWidget *btn_choose_file = gtk_button_new_with_label("Chọn file");
     g_signal_connect(btn_choose_file, "clicked", G_CALLBACK(on_choose_file_decrypt), NULL);
