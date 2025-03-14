@@ -577,7 +577,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
 
     g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %d-bit\n", input_filepath, key, key_size_enum);
-
+    gtk_widget_destroy(window_decrypt);
     // Hiển thị thông báo thành công
     GtkWidget *dialog = gtk_message_dialog_new(NULL,
                                                GTK_DIALOG_MODAL,
