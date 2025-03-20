@@ -371,6 +371,13 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
 
     gtk_widget_destroy(window_send_file);
     window_send_file = NULL;
+    GtkWidget *dialog = gtk_message_dialog_new(NULL,
+                                               GTK_DIALOG_MODAL,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "Gửi file thành công");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
 }
 
 void open_send_file_window(GtkWidget *widget, gpointer data)
@@ -704,6 +711,13 @@ void receive_file(int sockfd, char *filename, long file_size)
     }
     fclose(file);
     printf("Nhận file '%s' thành công!\n", filename);
+    GtkWidget *dialog = gtk_message_dialog_new(NULL,
+                                               GTK_DIALOG_MODAL,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "Có file gửi tới bạn");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
 }
 
 void *receive_messages(void *arg)

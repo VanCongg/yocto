@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "../include/aes.h"
-#include <unistd.h>  // Cho ftruncate() trên Linux/macOS
+#include <unistd.h> // Cho ftruncate() trên Linux/macOS
 // #include <io.h>      // Cho _chsize_s() trên Windows
 /**
  * This section contains the AES S-Box and Inverse S-Box
@@ -10,7 +10,7 @@
  * The Inverse S-Box is used in the decryption process to substitute bytes
  */
 
-static const uint8_t Sbox[256]  = {
+static const uint8_t Sbox[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
     0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -26,8 +26,7 @@ static const uint8_t Sbox[256]  = {
     0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
     0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
     0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
-    0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-};
+    0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16};
 
 static const uint8_t InvSbox[256] = {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
@@ -45,8 +44,7 @@ static const uint8_t InvSbox[256] = {
     0x1F, 0xDD, 0xA8, 0x33, 0x88, 0x07, 0xC7, 0x31, 0xB1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xEC, 0x5F,
     0x60, 0x51, 0x7F, 0xA9, 0x19, 0xB5, 0x4A, 0x0D, 0x2D, 0xE5, 0x7A, 0x9F, 0x93, 0xC9, 0x9C, 0xEF,
     0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61,
-    0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
-};
+    0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D};
 
 /**
  * Normalize the key to the target length
@@ -56,23 +54,28 @@ static const uint8_t InvSbox[256] = {
  * @param keyLen The original length of the key
  * @param targetLen The target length (AES_128, AES_192, or AES_256)
  */
-void NormalizeKey(uint8_t *key, int keyLen, AESKeyLength targetLen) {
-    if (keyLen > (int)targetLen) {
+void NormalizeKey(uint8_t *key, int keyLen, AESKeyLength targetLen)
+{
+    if (keyLen > (int)targetLen)
+    {
         // Cắt bớt khóa nếu dài hơn targetLen
         memset(key + (int)targetLen, 0, keyLen - (int)targetLen);
-    } else if (keyLen < (int)targetLen) {
+    }
+    else if (keyLen < (int)targetLen)
+    {
         // Padding với 0x00 nếu ngắn hơn targetLen
         memset(key + keyLen, 0, (int)targetLen - keyLen);
     }
 }
 
-
 /**
  * Substitute bytes in the state using the S-Box
  * @param state The state to substitute
  */
-void SubBytes(uint8_t *state) {
-    for (int i = 0; i < 16; i++) {
+void SubBytes(uint8_t *state)
+{
+    for (int i = 0; i < 16; i++)
+    {
         state[i] = Sbox[state[i]];
     }
 }
@@ -81,8 +84,10 @@ void SubBytes(uint8_t *state) {
  * Invert the SubBytes operation by substituting bytes in the state using the Inverse S-Box
  * @param state The state to substitute
  */
-void InvSubBytes(uint8_t *state) {
-    for (int i = 0; i < 16; i++) {
+void InvSubBytes(uint8_t *state)
+{
+    for (int i = 0; i < 16; i++)
+    {
         state[i] = InvSbox[state[i]];
     }
 }
@@ -91,9 +96,11 @@ void InvSubBytes(uint8_t *state) {
  * Shift the rows of the state
  * @param state The state to shift
  */
-void ShiftRows(uint8_t *state) {
+void ShiftRows(uint8_t *state)
+{
     uint8_t tmp[16];
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
+    {
         tmp[i] = state[i];
     }
 
@@ -122,9 +129,11 @@ void ShiftRows(uint8_t *state) {
  * Invert the ShiftRows operation by shifting the rows of the state in the opposite direction
  * @param state The state to shift
  */
-void InvShiftRows(uint8_t *state) {
+void InvShiftRows(uint8_t *state)
+{
     uint8_t tmp[16];
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
+    {
         tmp[i] = state[i];
     }
 
@@ -155,15 +164,19 @@ void InvShiftRows(uint8_t *state) {
  * @param b The second number
  * @return The product of a and b in the Galois Field
  */
-uint8_t gmul(uint8_t a, uint8_t b) {
+uint8_t gmul(uint8_t a, uint8_t b)
+{
     uint8_t p = 0;
-    for (int i = 0; i < 8; i++) {
-        if (b & 1) {
+    for (int i = 0; i < 8; i++)
+    {
+        if (b & 1)
+        {
             p ^= a;
         }
         uint8_t hi_bit_set = (a & 0x80);
         a <<= 1;
-        if (hi_bit_set) {
+        if (hi_bit_set)
+        {
             a ^= 0x1b; // XOR với đa thức sinh của AES
         }
         b >>= 1;
@@ -175,10 +188,13 @@ uint8_t gmul(uint8_t a, uint8_t b) {
  * Mix the columns of the state
  * @param state The state to mix
  */
-void MixColumn(uint8_t *state) {
-    for (int i = 0; i < 4; i++) {
+void MixColumn(uint8_t *state)
+{
+    for (int i = 0; i < 4; i++)
+    {
         uint8_t col[4];
-        for (int j = 0; j < 4; j++) {
+        for (int j = 0; j < 4; j++)
+        {
             col[j] = state[j * 4 + i];
         }
 
@@ -193,10 +209,13 @@ void MixColumn(uint8_t *state) {
  * Invert the MixColumns operation by mixing the columns of the state in the opposite direction
  * @param state The state to mix
  */
-void InvMixColumn(uint8_t *state) {
-    for (int i = 0; i < 4; i++) {
+void InvMixColumn(uint8_t *state)
+{
+    for (int i = 0; i < 4; i++)
+    {
         uint8_t col[4];
-        for (int j = 0; j < 4; j++) {
+        for (int j = 0; j < 4; j++)
+        {
             col[j] = state[j * 4 + i];
         }
 
@@ -212,8 +231,10 @@ void InvMixColumn(uint8_t *state) {
  * @param state The state to add the round key to
  * @param roundKey The round key to add
  */
-void AddRoundKey(uint8_t *state, uint8_t *roundKey) {
-    for (int i = 0; i < 16; i++) {
+void AddRoundKey(uint8_t *state, uint8_t *roundKey)
+{
+    for (int i = 0; i < 16; i++)
+    {
         state[i] ^= roundKey[i];
     }
 }
@@ -222,7 +243,8 @@ void AddRoundKey(uint8_t *state, uint8_t *roundKey) {
  * Rotate the word by one byte
  * @param state The state to rotate
  */
-void RotWord(uint8_t *word) {
+void RotWord(uint8_t *word)
+{
     uint8_t tmp = word[0];
     word[0] = word[1];
     word[1] = word[2];
@@ -236,7 +258,8 @@ void RotWord(uint8_t *word) {
  * @param expandedKeys The expanded keys
  * @param targetLen The target length of the key (AES_128, AES_192, or AES_256)
  */
-void KeyExpansion(uint8_t* inputKey, uint8_t* expandedKeys, AESKeyLength targetLen) {
+void KeyExpansion(uint8_t *inputKey, uint8_t *expandedKeys, AESKeyLength targetLen)
+{
     int Nk = targetLen / 4;
     int Nr = Nk + 6;
     int Nb = 4;
@@ -245,14 +268,16 @@ void KeyExpansion(uint8_t* inputKey, uint8_t* expandedKeys, AESKeyLength targetL
     uint8_t temp[4];
     uint8_t Rcon[4] = {0x01, 0x00, 0x00, 0x00};
 
-    for (i = 0; i < Nk; i++) {
+    for (i = 0; i < Nk; i++)
+    {
         expandedKeys[(i * 4) + 0] = inputKey[(i * 4) + 0];
         expandedKeys[(i * 4) + 1] = inputKey[(i * 4) + 1];
         expandedKeys[(i * 4) + 2] = inputKey[(i * 4) + 2];
         expandedKeys[(i * 4) + 3] = inputKey[(i * 4) + 3];
     }
 
-    for (i = Nk; i < Nb * (Nr + 1); i++) {
+    for (i = Nk; i < Nb * (Nr + 1); i++)
+    {
         // **Lấy 4 byte cuối cùng của expandedKeys**
         temp[0] = expandedKeys[(i - 1) * 4 + 0];
         temp[1] = expandedKeys[(i - 1) * 4 + 1];
@@ -260,7 +285,8 @@ void KeyExpansion(uint8_t* inputKey, uint8_t* expandedKeys, AESKeyLength targetL
         temp[3] = expandedKeys[(i - 1) * 4 + 3];
 
         // **Xử lý Rcon khi i chia hết cho Nk**
-        if (i % Nk == 0) {
+        if (i % Nk == 0)
+        {
             RotWord(temp);
             // substitute bytes
             temp[0] = Sbox[temp[0]];
@@ -273,9 +299,10 @@ void KeyExpansion(uint8_t* inputKey, uint8_t* expandedKeys, AESKeyLength targetL
 
             // Cập nhật Rcon
             Rcon[0] = (Rcon[0] << 1) ^ ((Rcon[0] & 0x80) ? 0x1B : 0x00);
-        } 
-       
-        else if (Nk > 6 && i % Nk == 4) {
+        }
+
+        else if (Nk > 6 && i % Nk == 4)
+        {
             temp[0] = Sbox[temp[0]];
             temp[1] = Sbox[temp[1]];
             temp[2] = Sbox[temp[2]];
@@ -296,14 +323,16 @@ void KeyExpansion(uint8_t* inputKey, uint8_t* expandedKeys, AESKeyLength targetL
  * @param expandedKeys The expanded keys
  * @param keySize The size of the key (AES_128, AES_192, or AES_256)
  */
-void AES_EncryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySize) {
+void AES_EncryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySize)
+{
     int Nk = keySize / 4;
     int Nr = Nk + 6;
     int Nb = 4;
 
     AddRoundKey(block, expandedKeys);
 
-    for (int round = 1; round < Nr; round++) {
+    for (int round = 1; round < Nr; round++)
+    {
         SubBytes(block);
         ShiftRows(block);
         MixColumn(block);
@@ -321,14 +350,16 @@ void AES_EncryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySiz
  * @param expandedKeys The expanded keys
  * @param keySize The size of the key (AES_128, AES_192, or AES_256)
  */
-void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySize) {
+void AES_DecryptBlock(uint8_t *block, uint8_t *expandedKeys, AESKeyLength keySize)
+{
     int Nk = keySize / 4;
     int Nr = Nk + 6;
     int Nb = 4;
 
     AddRoundKey(block, expandedKeys + Nr * Nb * 4);
 
-    for (int round = Nr - 1; round > 0; round--) {
+    for (int round = Nr - 1; round > 0; round--)
+    {
         InvShiftRows(block);
         InvSubBytes(block);
         AddRoundKey(block, expandedKeys + round * Nb * 4);

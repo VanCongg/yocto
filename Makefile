@@ -53,7 +53,7 @@ clean:
 
 # Chạy chương trình client
 run-client: client
-	gdb  ./bin/client
+	./bin/client
 
 # Chạy chương trình server
 run-server: server
