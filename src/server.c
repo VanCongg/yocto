@@ -347,7 +347,7 @@ void activate(GtkApplication *app, gpointer user_data)
     gtk_box_pack_start(GTK_BOX(vbox), grid, TRUE, TRUE, 0);
 
     // Load ảnh (đổi đường dẫn ảnh của bạn)
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("logo.png", 80, 80, TRUE, NULL);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("resources/logo.png", 80, 80, TRUE, NULL);
     GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
 
     // Ảnh nằm ở dòng 0, chiếm 2 cột

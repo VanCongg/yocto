@@ -825,7 +825,7 @@ void activate(GtkApplication *app, gpointer user_data)
     gtk_widget_set_margin_bottom(grid, 20);
     gtk_box_pack_start(GTK_BOX(vbox), grid, TRUE, TRUE, 0);
 
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("logo.png", 100, 100, TRUE, NULL);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale("resources/logo.png", 100, 100, TRUE, NULL);
     GtkWidget *image_logo = gtk_image_new_from_pixbuf(pixbuf);
     g_object_unref(pixbuf);
     gtk_grid_attach(GTK_GRID(grid), image_logo, 0, 0, 2, 1);
