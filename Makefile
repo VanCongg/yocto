@@ -67,57 +67,56 @@
 # # Chạy chương trình server
 # run-server: server
 # 	./bin/server
-CC = gcc
-CFLAGS = -Wall -Iinclude -g `pkg-config --cflags gtk+-3.0`
-LDFLAGS = `pkg-config --libs gtk+-3.0` -lpthread
+# Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
+CC ?= $(CROSS_COMPILE)gcc
+CFLAGS = -Wall -Iinclude -g
+LDFLAGS = -lpthread
 
 SRC_DIR = src
 OBJ_DIR = obj
+BIN_DIR = bin
 
 # Tạo thư mục nếu chưa tồn tại
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+$(OBJ_DIR) $(BIN_DIR):
+	mkdir -p $@
 
 # Biên dịch AES thành thư viện tĩnh
 $(OBJ_DIR)/aes.o: $(SRC_DIR)/aes.c include/aes.h | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Biên dịch mã nguồn chính
+# Biên dịch các file nguồn
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c include/aes.h | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Build các chương trình
-client: $(OBJ_DIR)/client.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/client $(LDFLAGS)
+$(BIN_DIR)/client: $(OBJ_DIR)/client.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-server: $(OBJ_DIR)/server.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/server $(LDFLAGS)
+$(BIN_DIR)/server: $(OBJ_DIR)/server.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-encrypt: $(OBJ_DIR)/encrypt.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/encrypt $(LDFLAGS)
+$(BIN_DIR)/encrypt: $(OBJ_DIR)/encrypt.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-decrypt: $(OBJ_DIR)/decrypt.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/decrypt $(LDFLAGS)
+$(BIN_DIR)/decrypt: $(OBJ_DIR)/decrypt.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Build tất cả
-all: client server encrypt decrypt
+all: $(BIN_DIR)/client $(BIN_DIR)/server $(BIN_DIR)/encrypt $(BIN_DIR)/decrypt
 
 # Dọn dẹp file biên dịch
 clean:
-	rm -rf $(OBJ_DIR)/*.o $(SRC_DIR)/client $(SRC_DIR)/server $(SRC_DIR)/encrypt $(SRC_DIR)/decrypt
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 # Cài đặt vào thư mục Yocto
 install: all
 	install -d $(DESTDIR)/usr/bin
-	install -m 0755 $(SRC_DIR)/client $(DESTDIR)/usr/bin/
-	install -m 0755 $(SRC_DIR)/server $(DESTDIR)/usr/bin/
-	install -m 0755 $(SRC_DIR)/encrypt $(DESTDIR)/usr/bin/
-	install -m 0755 $(SRC_DIR)/decrypt $(DESTDIR)/usr/bin/
+	install -m 0755 $(BIN_DIR)/* $(DESTDIR)/usr/bin/
 
 # Chạy chương trình client
-run-client: client
-	./src/client
+run-client: $(BIN_DIR)/client
+	./$(BIN_DIR)/client
 
 # Chạy chương trình server
-run-server: server
-	./src/server
+run-server: $(BIN_DIR)/server
+	./$(BIN_DIR)/server
