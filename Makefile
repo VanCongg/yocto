@@ -67,17 +67,16 @@
 # # Chạy chương trình server
 # run-server: server
 # 	./bin/server
-CC ?= $(CROSS_COMPILE)gcc
+CC = gcc
 CFLAGS = -Wall -Iinclude -g `pkg-config --cflags gtk+-3.0`
 LDFLAGS = `pkg-config --libs gtk+-3.0` -lpthread
 
 SRC_DIR = src
 OBJ_DIR = obj
-BIN_DIR = bin
 
 # Tạo thư mục nếu chưa tồn tại
-$(OBJ_DIR) $(BIN_DIR):
-	mkdir -p $@
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
 
 # Biên dịch AES thành thư viện tĩnh
 $(OBJ_DIR)/aes.o: $(SRC_DIR)/aes.c include/aes.h | $(OBJ_DIR)
@@ -88,34 +87,37 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c include/aes.h | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Build các chương trình
-client: $(BIN_DIR) $(OBJ_DIR)/client.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/client $(LDFLAGS)
+client: $(OBJ_DIR)/client.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/client $(LDFLAGS)
 
-server: $(BIN_DIR) $(OBJ_DIR)/server.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/server $(LDFLAGS)
+server: $(OBJ_DIR)/server.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/server $(LDFLAGS)
 
-encrypt: $(BIN_DIR) $(OBJ_DIR)/encrypt.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/encrypt $(LDFLAGS)
+encrypt: $(OBJ_DIR)/encrypt.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/encrypt $(LDFLAGS)
 
-decrypt: $(BIN_DIR) $(OBJ_DIR)/decrypt.o $(OBJ_DIR)/aes.o
-	$(CC) $(CFLAGS) $^ -o $(BIN_DIR)/decrypt $(LDFLAGS)
+decrypt: $(OBJ_DIR)/decrypt.o $(OBJ_DIR)/aes.o
+	$(CC) $(CFLAGS) $^ -o $(SRC_DIR)/decrypt $(LDFLAGS)
 
 # Build tất cả
 all: client server encrypt decrypt
 
 # Dọn dẹp file biên dịch
 clean:
-	rm -rf $(OBJ_DIR)/*.o $(BIN_DIR)/*
+	rm -rf $(OBJ_DIR)/*.o $(SRC_DIR)/client $(SRC_DIR)/server $(SRC_DIR)/encrypt $(SRC_DIR)/decrypt
 
-# Cài đặt vào hệ thống Yocto
+# Cài đặt vào thư mục Yocto
 install: all
 	install -d $(DESTDIR)/usr/bin
-	install -m 0755 $(BIN_DIR)/* $(DESTDIR)/usr/bin
+	install -m 0755 $(SRC_DIR)/client $(DESTDIR)/usr/bin/
+	install -m 0755 $(SRC_DIR)/server $(DESTDIR)/usr/bin/
+	install -m 0755 $(SRC_DIR)/encrypt $(DESTDIR)/usr/bin/
+	install -m 0755 $(SRC_DIR)/decrypt $(DESTDIR)/usr/bin/
 
 # Chạy chương trình client
 run-client: client
-	./bin/client
+	./src/client
 
 # Chạy chương trình server
 run-server: server
-	./bin/server
+	./src/server
