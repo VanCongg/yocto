@@ -98,7 +98,7 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Build tất cả
-all: $(BINARIES:%=$(BIN_DIR)/%)
+all: $(BIN_DIR) $(OBJ_DIR) $(BINARIES:%=$(BIN_DIR)/%)
 
 # Cài đặt vào thư mục Yocto
 install: all
