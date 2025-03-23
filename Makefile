@@ -103,10 +103,10 @@ all: $(BIN_DIR) $(OBJ_DIR) $(BINARIES:%=$(BIN_DIR)/%)
 # Cài đặt vào thư mục Yocto
 install: all
 	install -d $(DESTDIR)/usr/bin
-	install -m 0755 $(BIN_DIR)/* $(DESTDIR)/usr/bin/
+	@if [ -n "$(wildcard $(BIN_DIR)/*)" ]; then install -m 0755 $(BIN_DIR)/* $(DESTDIR)/usr/bin/; fi
 
 # Dọn dẹp
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -rf $(OBJ_DIR)/* $(BIN_DIR)/*
 
 .PHONY: all clean install
