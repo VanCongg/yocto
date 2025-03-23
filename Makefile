@@ -68,55 +68,45 @@
 # run-server: server
 # 	./bin/server
 # Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
+# Định nghĩa trình biên dịch
 CC ?= $(CROSS_COMPILE)gcc
 CFLAGS = -Wall -Iinclude -g
 LDFLAGS = -lpthread
 
+# Định nghĩa thư mục
 SRC_DIR = src
 OBJ_DIR = obj
 BIN_DIR = bin
+
+# Danh sách file nguồn
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+
+# Danh sách binary
+BINARIES = client server encrypt decrypt
 
 # Tạo thư mục nếu chưa tồn tại
 $(OBJ_DIR) $(BIN_DIR):
 	mkdir -p $@
 
-# Biên dịch AES thành thư viện tĩnh
-$(OBJ_DIR)/aes.o: $(SRC_DIR)/aes.c include/aes.h | $(OBJ_DIR)
+# Biên dịch file .c thành .o
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Biên dịch các file nguồn
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c include/aes.h | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Build các chương trình
-$(BIN_DIR)/client: $(OBJ_DIR)/client.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-
-$(BIN_DIR)/server: $(OBJ_DIR)/server.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-
-$(BIN_DIR)/encrypt: $(OBJ_DIR)/encrypt.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
-
-$(BIN_DIR)/decrypt: $(OBJ_DIR)/decrypt.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
+# Tạo file thực thi
+$(BIN_DIR)/%: $(OBJ_DIR)/%.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Build tất cả
-all: $(BIN_DIR)/client $(BIN_DIR)/server $(BIN_DIR)/encrypt $(BIN_DIR)/decrypt
-
-# Dọn dẹp file biên dịch
-clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+all: $(BINARIES:%=$(BIN_DIR)/%)
 
 # Cài đặt vào thư mục Yocto
 install: all
 	install -d $(DESTDIR)/usr/bin
 	install -m 0755 $(BIN_DIR)/* $(DESTDIR)/usr/bin/
 
-# Chạy chương trình client
-run-client: $(BIN_DIR)/client
-	./$(BIN_DIR)/client
+# Dọn dẹp
+clean:
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-# Chạy chương trình server
-run-server: $(BIN_DIR)/server
-	./$(BIN_DIR)/server
+.PHONY: all clean install
