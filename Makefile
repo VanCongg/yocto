@@ -71,7 +71,7 @@
 # Định nghĩa trình biên dịch
 CC ?= $(CROSS_COMPILE)gcc
 CFLAGS = -Wall -Iinclude -g $(shell pkg-config --cflags gtk+-3.0)
-LDFLAGS = -lpthread $(shell pkg-config --libs gtk+-3.0)
+LDFLAGS += -lpthread $(shell pkg-config --libs gtk+-3.0) -Wl,--hash-style=gnu
 
 # Định nghĩa thư mục
 SRC_DIR = src
