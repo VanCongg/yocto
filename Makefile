@@ -7,11 +7,8 @@ OBJ_DIR = obj
 BIN_DIR = bin
 
 # Tạo thư mục nếu chưa tồn tại
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
-
-$(BIN_DIR):
-	mkdir -p $(BIN_DIR)
+$(OBJ_DIR) $(BIN_DIR):
+	mkdir -p $@
 
 # Biên dịch AES thành thư viện tĩnh
 $(OBJ_DIR)/aes.o: $(SRC_DIR)/aes.c include/aes.h | $(OBJ_DIR)
@@ -53,7 +50,7 @@ all: client server encrypt decrypt
 
 # Dọn dẹp file biên dịch
 clean:
-	rm -rf $(OBJ_DIR)/*.o $(BIN_DIR)/*
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 # Cài đặt vào thư mục Yocto
 install: all | $(BIN_DIR)
@@ -67,6 +64,7 @@ run-client: client
 # Chạy chương trình server
 run-server: server
 	./bin/server
+
 # Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
 # Định nghĩa trình biên dịch
 # CC ?= $(CROSS_COMPILE)gcc
