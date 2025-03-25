@@ -108,7 +108,12 @@ void *client_handler(void *arg)
         char filename[256], receiver[256];
         if (sscanf(buffer, "SEND_FILE|%255[^|]|%255[^|]", filename, receiver) == 2)
         {
-            receiver[strcspn(receiver, "\r\n ")] = '\0';
+            memset(receiver, 0, sizeof(receiver));
+            sscanf(buffer, "SEND_FILE|%255[^|]|%255[^|]", filename, receiver);
+            char *token = strtok(receiver, "\r\n ");
+            if (token)
+                strcpy(receiver, token);
+            printf("Người nhận sau khi xử lý: '%s'\n", receiver);
             printf("Nhận file '%s' từ '%s' gửi đến '%s'\n", filename, username, receiver);
 
             // Tìm socket của người nhận
