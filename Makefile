@@ -5,8 +5,8 @@ LDFLAGS = `pkg-config --libs gtk+-3.0`
 SRC_DIR = src
 BUILD_DIR = build
 
-CLIENT_SRC = $(SRC_DIR)/client.c
-SERVER_SRC = $(SRC_DIR)/server.c
+CLIENT_SRC = $(SRC_DIR)/client.c $(SRC_DIR)/aes.c
+SERVER_SRC = $(SRC_DIR)/server.c $(SRC_DIR)/aes.c
 
 CLIENT_BIN = $(BUILD_DIR)/client
 SERVER_BIN = $(BUILD_DIR)/server
@@ -17,10 +17,10 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(CLIENT_BIN): $(CLIENT_SRC) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(SERVER_BIN): $(SERVER_SRC) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -32,6 +32,7 @@ run-client: $(CLIENT_BIN)
 	./$(CLIENT_BIN)
 
 .PHONY: all clean run-server run-client
+
 
 
 # Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
