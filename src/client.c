@@ -715,7 +715,7 @@ void receive_file(int sockfd, char *filename, long file_size)
                                                GTK_DIALOG_MODAL,
                                                GTK_MESSAGE_INFO,
                                                GTK_BUTTONS_OK,
-                                               "Có file gửi tới bạn");
+                                               "Có file %s gửi tới bạn",filename);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 }
