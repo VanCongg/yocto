@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
-LDFLAGS = 
+CFLAGS = -Wall -Wextra -O2 `pkg-config --cflags gtk+-3.0`
+LDFLAGS = `pkg-config --libs gtk+-3.0`
 
 SRC_DIR = src
 BUILD_DIR = build
@@ -17,10 +17,10 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(CLIENT_BIN): $(CLIENT_SRC) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 $(SERVER_BIN): $(SERVER_SRC) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -32,6 +32,7 @@ run-client: $(CLIENT_BIN)
 	./$(CLIENT_BIN)
 
 .PHONY: all clean run-server run-client
+
 
 # Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
 # Định nghĩa trình biên dịch
