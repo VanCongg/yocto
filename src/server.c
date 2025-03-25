@@ -105,18 +105,11 @@ void *client_handler(void *arg)
             append_log(log_message);
             break;
         }
-        char filename[256], receiver[256];
+        char filename[256] ={0}, receiver[256] ={0};
         if (sscanf(buffer, "SEND_FILE|%255[^|]|%255[^|]", filename, receiver) == 2)
         {
-            printf("SEND_FILE|%s|%s\n", filename, receiver);
-            memset(receiver, 0, sizeof(receiver));
-            sscanf(buffer, "SEND_FILE|%255[^|]|%255[^|]", filename, receiver);
-            char *token = strtok(receiver, "\r\n ");
-            if (token)
-                strcpy(receiver, token);
-            printf("Người nhận sau khi xử lý: '%s'\n", receiver);
+            receiver[strcspn(receiver, "\r\n ")] = '\0';
             printf("Nhận file '%s' từ '%s' gửi đến '%s'\n", filename, username, receiver);
-
             // Tìm socket của người nhận
             int receiver_socket;
             pthread_mutex_lock(&lock);
