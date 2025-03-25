@@ -108,6 +108,7 @@ void *client_handler(void *arg)
         char filename[256], receiver[256];
         if (sscanf(buffer, "SEND_FILE|%255[^|]|%255[^|]", filename, receiver) == 2)
         {
+            printf("SEND_FILE|%s|%s\n", filename, receiver);
             memset(receiver, 0, sizeof(receiver));
             sscanf(buffer, "SEND_FILE|%255[^|]|%255[^|]", filename, receiver);
             char *token = strtok(receiver, "\r\n ");
