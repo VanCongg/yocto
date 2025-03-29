@@ -20,6 +20,8 @@ GtkWidget *window_decrypt;
 GtkWidget *entry_filename;
 GtkWidget *entry_key;
 GtkWidget *comboBox_keysize;
+GtkWidget *log_entry;
+
 // Server variables
 int server_socket, client_count = 0;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -34,40 +36,23 @@ ClientInfo clients[MAX_CLIENTS];
 // Cập nhật log
 void append_log(const char *message)
 {
-    if (log_buffer == NULL)
-    {
-        g_printerr("Lỗi: log_buffer chưa được khởi tạo!\n");
-        return;
-    }
-    GtkTextIter end;
-    time_t rawtime;
-    struct tm *timeinfo;
-    char time_str[20];
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    strftime(time_str, sizeof(time_str), "[%H:%M:%S]", timeinfo);
-    char log_message[512];
-    snprintf(log_message, sizeof(log_message), "%s %s", time_str, message);
-
-    gtk_text_buffer_get_end_iter(log_buffer, &end);
-    gtk_text_buffer_insert(log_buffer, &end, log_message, -1);
-    gtk_text_buffer_insert(log_buffer, &end, "\n", -1);
+    gtk_entry_set_text(GTK_ENTRY(log_entry), message);
 }
+
 void decrypt_file(GtkWidget *widget, gpointer data)
 {
-    g_print("🔄 Bắt đầu quá trình giải mã...\n");
+    g_print("🔄 Bat dau qua trinh giai ma...\n");
 
     if (!entry_filename)
     {
-        g_print("Lỗi: entry_filename chưa được khởi tạo!\n");
+        g_print("Error: entry_filename chua duoc khoi tao!\n");
         return;
     }
 
     const char *selected_filename = gtk_entry_get_text(GTK_ENTRY(entry_filename));
     if (!selected_filename || strlen(selected_filename) == 0)
     {
-        g_print("Lỗi: Chưa chọn file để giải mã!\n");
+        g_print("Error: chua chon file de giai ma!\n");
         return;
     }
 
@@ -93,7 +78,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         g_print("Lỗi: Chưa nhập key!\n");
         return;
     }
-    g_print("Key nhập vào: %s\n", key);
+    g_print("Key input: %s\n", key);
 
     if (!comboBox_keysize)
     {
@@ -127,7 +112,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         g_print("Lỗi: Giá trị key_size không hợp lệ!\n");
         return;
     }
-    g_print("Độ dài key được chọn: %d-bit\n", key_size_enum);
+    g_print("Keysize: %d-bit\n", key_size_enum);
 
     // Đổi phần mở rộng thành .txt sau khi giải mã
     char output_filepath[512];
@@ -143,15 +128,15 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     {
         strncat(output_filepath, ".txt", sizeof(output_filepath) - strlen(output_filepath) - 1);
     }
-    g_print("File đầu ra: %s\n", output_filepath);
+    g_print("File output: %s\n", output_filepath);
 
     // Gọi hàm giải mã
-    g_print("Đang tiến hành giải mã...\n");
+    g_print("Dang tien hanh giai ma...\n");
     int decrypt_result = aes_decrypt_file((const uint8_t *)input_filepath,
                                           (const uint8_t *)output_filepath,
                                           (const uint8_t *)key,
                                           (AESKeyLength)key_size_enum);
-    g_print("Kết quả giải mã: %d\n", decrypt_result);
+    g_print("Ket qua giai ma: %d\n", decrypt_result);
 
     if (decrypt_result != 0)
     {
@@ -159,7 +144,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         return;
     }
 
-    g_print("Giải mã thành công file: %s\n", output_filepath);
+    g_print("Giai ma thanh cong: %s\n", output_filepath);
 
     gtk_widget_destroy(window_decrypt);
     ;
@@ -186,7 +171,7 @@ void *client_handler(void *arg)
     username[strcspn(username, "\r\n")] = '\0';
 
     char log_message[200];
-    snprintf(log_message, sizeof(log_message), "Client '%s' đã kết nối.", username);
+    snprintf(log_message, sizeof(log_message), "Client '%s' connect", username);
     append_log(log_message);
 
     pthread_mutex_lock(&lock);
@@ -211,19 +196,12 @@ void *client_handler(void *arg)
 
         if (bytes_received <= 0)
         {
-            snprintf(log_message, sizeof(log_message), "Client '%s' mất kết nối bất thường.", username);
+            snprintf(log_message, sizeof(log_message), "Client '%s' disconnect.", username);
             append_log(log_message);
             break;
         }
 
         buffer[bytes_received] = '\0';
-
-        if (strcmp(buffer, "LOGOUT") == 0)
-        {
-            snprintf(log_message, sizeof(log_message), "Client '%s' đã logout.", username);
-            append_log(log_message);
-            break;
-        }
         char filename[256] = {0};
         if (sscanf(buffer, "SEND_FILE|%255[^|]", filename) == 1)
         {
@@ -254,7 +232,7 @@ void *client_handler(void *arg)
                 close(client_socket);
                 return NULL;
             }
-            printf("Đang nhận file '%s', kích thước: %ld bytes\n", filename, file_size);
+            printf("Dang nhan file '%s', kích thước: %ld bytes\n", filename, file_size);
             // Nhận file theo buffer tối ưu
             size_t total_received = 0;
             while (total_received < file_size)
@@ -271,7 +249,7 @@ void *client_handler(void *arg)
                 total_received += bytes_received;
             }
             fclose(file);
-            printf("Nhận file '%s' thành công! (%ld/%ld bytes)\n", filename, total_received, file_size);
+            printf("Nhan file '%s' thanh cong! (%ld/%ld bytes)\n", filename, total_received, file_size);
         }
     }
     close(client_socket);
@@ -306,7 +284,7 @@ void *server_thread(void *arg)
     }
 
     listen(server_socket, MAX_CLIENTS);
-    append_log("Server đang chạy...");
+    append_log("Server dang chay...");
 
     while (1)
     {
@@ -326,6 +304,27 @@ void *server_thread(void *arg)
         }
         pthread_detach(client_thread);
     }
+}
+void on_stop_server(GtkWidget *widget, gpointer data)
+{
+    if (server_socket > 0)
+    {
+        append_log("Đang tắt server...");
+        pthread_mutex_lock(&lock);
+        for (int i = 0; i < client_count; i++)
+        {
+            close(clients[i].socket);
+        }
+        client_count = 0;
+        pthread_mutex_unlock(&lock);
+        close(server_socket);
+        server_socket = 0;
+    }
+    if (window_server)
+    {
+        gtk_widget_destroy(window_server);
+    }
+    gtk_widget_show_all(window_main);
 }
 
 void decrypt_back_to_main(GtkWidget *widget, gpointer data)
@@ -409,6 +408,7 @@ void open_server_window()
     window_server = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window_server), "Server Logs");
     gtk_window_set_default_size(GTK_WINDOW(window_server), 400, 300);
+    gtk_container_set_border_width(GTK_CONTAINER(window_server), 15);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_add(GTK_CONTAINER(window_server), vbox);
@@ -417,43 +417,33 @@ void open_server_window()
     status_label = gtk_label_new("Server đang chạy...");
     gtk_box_pack_start(GTK_BOX(vbox), status_label, FALSE, FALSE, 5);
 
-    // Tạo frame để chứa log
-    GtkWidget *frame = gtk_frame_new(NULL);
-    gtk_widget_set_name(frame, "log_frame"); // Gán ID CSS
-    gtk_widget_set_margin_start(frame, 30);
-    gtk_widget_set_margin_end(frame, 30);
-    gtk_widget_set_margin_top(frame, 10);
-    gtk_widget_set_margin_bottom(frame, 10);
-    gtk_widget_set_size_request(frame, 320, 200);
-    gtk_box_pack_start(GTK_BOX(vbox), frame, TRUE, TRUE, 0);
+    // Ô nhập log thay vì GtkTextView
+    log_entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(log_entry), "Log hiển thị ở đây...");
+    gtk_editable_set_editable(GTK_EDITABLE(log_entry), FALSE); // Không cho phép nhập
+    gtk_widget_set_margin_start(log_entry, 20);
+    gtk_widget_set_margin_end(log_entry, 20);
+    gtk_widget_set_margin_top(log_entry, 10);
+    gtk_widget_set_margin_bottom(log_entry, 10);
+    gtk_box_pack_start(GTK_BOX(vbox), log_entry, FALSE, FALSE, 0);
 
-    // Thêm cửa sổ cuộn vào frame
-    GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-    gtk_container_add(GTK_CONTAINER(frame), scrolled_window);
+    // Hộp chứa các nút (Căn chỉnh theo chiều dọc)
+    GtkWidget *vbox_buttons = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_set_margin_start(vbox_buttons, 100);
+    gtk_widget_set_margin_end(vbox_buttons, 100);
+    gtk_widget_set_margin_top(vbox_buttons, 10);
+    gtk_widget_set_margin_bottom(vbox_buttons, 10);
+    gtk_box_pack_start(GTK_BOX(vbox), vbox_buttons, FALSE, FALSE, 5);
 
-    // Khu vực hiển thị log
-    log_view = gtk_text_view_new();
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(log_view), FALSE);
-    log_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(log_view));
-    gtk_container_add(GTK_CONTAINER(scrolled_window), log_view);
-
-    // Hộp chứa nút "File nhận" và "Giải mã"
-    GtkWidget *hbox_buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_widget_set_margin_start(hbox_buttons, 30);
-    gtk_widget_set_margin_end(hbox_buttons, 30);
-    gtk_widget_set_margin_top(hbox_buttons, 5);
-    gtk_widget_set_margin_bottom(hbox_buttons, 10);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox_buttons, FALSE, FALSE, 5);
-
-    // Nút "File nhận"
-    GtkWidget *btn_receive_file = gtk_button_new_with_label("File nhận");
-    g_signal_connect(btn_receive_file, "clicked", G_CALLBACK(on_choose_file_decrypt), NULL);
-    gtk_box_pack_start(GTK_BOX(hbox_buttons), btn_receive_file, TRUE, TRUE, 5);
-
-    // Nút "Giải mã"
+    // Nút "Giải mã" (ở trên)
     GtkWidget *btn_decrypt = gtk_button_new_with_label("Giải mã");
     g_signal_connect(btn_decrypt, "clicked", G_CALLBACK(open_decrypt_window), NULL);
-    gtk_box_pack_start(GTK_BOX(hbox_buttons), btn_decrypt, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(vbox_buttons), btn_decrypt, FALSE, FALSE, 5);
+
+    // Nút "Dừng server" (ở dưới)
+    GtkWidget *btn_stop_server = gtk_button_new_with_label("Dừng server");
+    g_signal_connect(btn_stop_server, "clicked", G_CALLBACK(on_stop_server), NULL);
+    gtk_box_pack_start(GTK_BOX(vbox_buttons), btn_stop_server, FALSE, FALSE, 5);
 
     gtk_widget_show_all(window_server);
 }
