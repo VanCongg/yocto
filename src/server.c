@@ -33,12 +33,6 @@ typedef struct
     char username[MAX_USERNAME_LENGTH];
 } ClientInfo;
 ClientInfo clients[MAX_CLIENTS];
-// Cập nhật log
-void append_log(const char *message)
-{
-    gtk_entry_set_text(GTK_ENTRY(log_entry), message);
-}
-
 void decrypt_file(GtkWidget *widget, gpointer data)
 {
     g_print("🔄 Bat dau qua trinh giai ma...\n");
@@ -165,7 +159,6 @@ void *client_handler(void *arg)
 
     char log_message[200];
     snprintf(log_message, sizeof(log_message), "Client '%s' connect", username);
-    append_log(log_message);
 
     pthread_mutex_lock(&lock);
     if (client_count < MAX_CLIENTS)
@@ -189,7 +182,6 @@ void *client_handler(void *arg)
         if (bytes_received <= 0)
         {
             snprintf(log_message, sizeof(log_message), "Client '%s' disconnect.", username);
-            append_log(log_message);
             pthread_mutex_lock(&lock);
             for (int i = 0; i < client_count; i++)
             {
@@ -256,7 +248,6 @@ void *client_handler(void *arg)
             }
             fclose(file);
             printf("Nhan file '%s' thanh cong! (%ld/%ld bytes)\n", filename, total_received, file_size);
-            append_log("Đã nhận file từ client.");
         }
     }
     close(client_socket);
@@ -275,7 +266,6 @@ void *server_thread(void *arg)
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0)
     {
-        append_log("Lỗi tạo socket!");
         return NULL;
     }
     int opt = 1;
@@ -286,13 +276,10 @@ void *server_thread(void *arg)
 
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        append_log("Lỗi bind!");
         return NULL;
     }
 
     listen(server_socket, MAX_CLIENTS);
-    append_log("Server dang chay...");
-
     while (1)
     {
         int *client_socket = malloc(sizeof(int));
@@ -306,7 +293,6 @@ void *server_thread(void *arg)
         pthread_create(&client_thread, NULL, client_handler, client_socket);
         if (pthread_create(&client_thread, NULL, client_handler, client_socket) != 0)
         {
-            append_log("Lỗi tạo luồng cho client!");
             free(client_socket);
         }
         pthread_detach(client_thread);
@@ -316,7 +302,6 @@ void on_stop_server(GtkWidget *widget, gpointer data)
 {
     if (server_socket > 0)
     {
-        append_log("Đang tắt server...");
         pthread_mutex_lock(&lock);
         for (int i = 0; i < client_count; i++)
         {
@@ -413,7 +398,7 @@ void open_server_window()
 {
     // Tạo cửa sổ Server Logs
     window_server = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window_server), "Server Logs");
+    gtk_window_set_title(GTK_WINDOW(window_server), "Server");
     gtk_window_set_default_size(GTK_WINDOW(window_server), 400, 300);
     gtk_container_set_border_width(GTK_CONTAINER(window_server), 15);
 
@@ -423,17 +408,6 @@ void open_server_window()
     // Nhãn trạng thái
     status_label = gtk_label_new("Server đang chạy...");
     gtk_box_pack_start(GTK_BOX(vbox), status_label, FALSE, FALSE, 5);
-
-    // Ô nhập log thay vì GtkTextView
-    log_entry = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(log_entry), "Log hiển thị ở đây...");
-    gtk_editable_set_editable(GTK_EDITABLE(log_entry), FALSE); // Không cho phép nhập
-    gtk_widget_set_margin_start(log_entry, 20);
-    gtk_widget_set_margin_end(log_entry, 20);
-    gtk_widget_set_margin_top(log_entry, 10);
-    gtk_widget_set_margin_bottom(log_entry, 10);
-    gtk_box_pack_start(GTK_BOX(vbox), log_entry, FALSE, FALSE, 0);
-
     // Hộp chứa các nút (Căn chỉnh theo chiều dọc)
     GtkWidget *vbox_buttons = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_widget_set_margin_start(vbox_buttons, 100);

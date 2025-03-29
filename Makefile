@@ -35,7 +35,7 @@
 
 
 
-Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
+#Sử dụng cross-compiler của Yocto nếu có, nếu không sẽ dùng gcc mặc định
 # Định nghĩa trình biên dịch
 CC ?= $(CROSS_COMPILE)gcc
 CFLAGS = -Wall -Iinclude -g $(shell pkg-config --cflags gtk+-3.0)
