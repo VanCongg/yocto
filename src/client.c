@@ -21,21 +21,16 @@ GtkWidget *window_login, *window_main;
 GtkWidget *entry_ip, *entry_port, *entry_username;
 GtkWidget *window_send_file;
 GSocketConnection *client_connection = NULL;
-char received_filename[256];
 int sockfd;
-GtkWidget *entry_filename;
 GtkWidget *combo_clients;
 GtkWidget *entry_filename;
-GtkWidget *window_received, *file_list;
+GtkWidget *file_list;
 GtkWidget *window_decrypt, *entry_key, *combobox_key_size;
 GtkWidget *combo_keysize;
 GtkWidget *entry_key;
-GtkWidget *window_decrypt;
 GtkWidget *comboBox_keysize;
 char selected_file[256] = "";
 void select_file(GtkWidget *widget, gpointer data);
-void open_decrypt_window(GtkWidget *widget, gpointer data);
-void decrypt_file(GtkWidget *widget, gpointer data);
 typedef struct
 {
     char filename[256];
@@ -134,16 +129,6 @@ void create_directories()
         mkdir("en", 0700);
         printf("Đã tạo thư mục 'en'\n");
     }
-    if (stat("de", &st) == -1)
-    {
-        mkdir("de", 0700);
-        printf("Đã tạo thư mục 'de'\n");
-    }
-    if (stat("received_files", &st) == -1)
-    {
-        mkdir("received_files", 0700);
-        printf("Đã tạo thư mục 'received_files'\n");
-    }
 }
 
 void open_directory(const char *folder_name)
@@ -164,7 +149,7 @@ void open_directory(const char *folder_name)
 
 void on_open_folder_button_clicked(GtkButton *button, gpointer user_data)
 {
-    const char *folder_path = "de";
+    const char *folder_path = "en";
     open_directory(folder_path);
 }
 
@@ -204,29 +189,21 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
 {
     if (!selected_filepath)
     {
-        g_print("⚠️ Chưa chọn file!\n");
+        g_print("Chưa chọn file!\n");
         return;
     }
 
     const char *new_filename = gtk_entry_get_text(GTK_ENTRY(entry_filename));
     if (strlen(new_filename) == 0)
     {
-        g_print("⚠️ Chưa nhập tên file mới!\n");
-        return;
-    }
-
-    GtkEntry *entry_receiver = GTK_ENTRY(data);
-    const char *receiver = gtk_entry_get_text(entry_receiver);
-    if (strlen(receiver) == 0)
-    {
-        g_print("⚠️ Chưa nhập tên người nhận!\n");
+        g_print("Chưa nhập tên file mới!\n");
         return;
     }
 
     const char *key = gtk_entry_get_text(GTK_ENTRY(entry_key));
     if (strlen(key) == 0)
     {
-        g_print("⚠️ Chưa nhập key mã hóa!\n");
+        g_print("Chưa nhập key mã hóa!\n");
         return;
     }
 
@@ -248,14 +225,13 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     else
     {
         printf("Lỗi: Giá trị key_size không hợp lệ!\n");
-        return -1;
+        return;
     }
 
-    g_print("🔍 File nguồn: %s\n", selected_filepath);
-    g_print("🔍 Tên file mới: %s\n", new_filename);
-    g_print("🔍 Người nhận: %s\n", receiver);
-    g_print("🔍 Key: %s\n", key);
-    g_print("🔍 Key Size: %d\n", key_size);
+    g_print("File nguồn: %s\n", selected_filepath);
+    g_print("Tên file mới: %s\n", new_filename);
+    g_print("Key: %s\n", key);
+    g_print("Key Size: %d\n", key_size);
 
     // Tạo thư mục en/ nếu chưa tồn tại
     struct stat st = {0};
@@ -263,55 +239,54 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     {
         if (mkdir("en", 0700) != 0)
         {
-            perror("❌ Lỗi khi tạo thư mục 'en/'");
+            perror("Lỗi khi tạo thư mục 'en/'");
             return;
         }
-        g_print("📂 Đã tạo thư mục 'en/'\n");
+        g_print("Đã tạo thư mục 'en/'\n");
     }
+
     // Lấy tên file từ đường dẫn
     const char *basename = g_path_get_basename(selected_filepath);
-
-    // Sao chép tên file để chỉnh sửa
     char filename_no_ext[PATH_MAX];
-    strncpy(filename_no_ext, basename, sizeof(filename_no_ext) - 1);
-    filename_no_ext[sizeof(filename_no_ext) - 1] = '\0';
-
-    // Loại bỏ phần mở rộng
-    char *dot = strrchr(filename_no_ext, '.');
+    char *dot = strrchr(basename, '.');
     if (dot)
     {
-        *dot = '\0';
+        strncpy(filename_no_ext, basename, dot - basename);
+        filename_no_ext[dot - basename] = '\0';
     }
-
-    g_print("📝 Tên file không có phần mở rộng: %s\n", filename_no_ext);
-
-    // Định dạng tên file mã hóa
+    else
+    {
+        strcpy(filename_no_ext, basename);
+    }
+    g_free(basename);
+    // Giữ nguyên tên file sau khi mã hóa
     char encrypted_file[PATH_MAX];
     snprintf(encrypted_file, sizeof(encrypted_file), "en/%s.enc", filename_no_ext);
-    g_print("🔐 File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
+    g_print("File mã hóa sẽ được lưu tại: %s\n", encrypted_file);
+
     int result = aes_encrypt_file((const uint8_t *)selected_filepath,
                                   (const uint8_t *)encrypted_file,
                                   (const uint8_t *)key, (AESKeyLength)key_size);
 
     if (result != 0)
     {
-        g_print("❌ Lỗi khi mã hóa file!\n");
+        g_print("Lỗi khi mã hóa file!\n");
         return;
     }
-    g_print("🔒 File đã mã hóa thành công: %s\n", encrypted_file);
+    g_print("File đã mã hóa thành công: %s\n", encrypted_file);
 
     struct stat encrypted_stat;
     if (stat(encrypted_file, &encrypted_stat) != 0)
     {
-        perror("❌ Không thể lấy thông tin file mã hóa");
+        perror("Không thể lấy thông tin file mã hóa");
         return;
     }
-    g_print("📏 Kích thước file mã hóa: %ld bytes\n", encrypted_stat.st_size);
+    g_print("Kích thước file mã hóa: %ld bytes\n", encrypted_stat.st_size);
 
     FILE *file = fopen(encrypted_file, "rb");
     if (!file)
     {
-        perror("❌ Không thể mở file đã mã hóa");
+        perror("Không thể mở file đã mã hóa");
         return;
     }
 
@@ -319,32 +294,26 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    g_print("📏 Kích thước file thực tế trước khi gửi: %ld bytes\n", file_size);
+    g_print("Kích thước file thực tế trước khi gửi: %ld bytes\n", file_size);
 
-    // 📤 **Gửi tên file mã hóa, không phải new_filename**
     char command[512];
-    if (strlen(encrypted_file) + strlen(receiver) >= 500)
+    if (strlen(filename_no_ext) >= 500)
     {
-        g_print("❌ Lỗi: Đường dẫn file quá dài!\n");
+        g_print("Lỗi: Tên file quá dài!\n");
         return;
     }
-    char *filename = strrchr(encrypted_file, '/'); // Tìm dấu `/` cuối cùng
-    if (filename)
-        filename++; // Bỏ dấu `/` để lấy phần tên file
-    else
-        filename = encrypted_file; // Không có `/`, giữ nguyên tên
-    snprintf(command, sizeof(command), "SEND_FILE|%s|%s", filename, receiver);
+    snprintf(command, sizeof(command), "SEND_FILE|%s.enc", filename_no_ext);
     if (send(sockfd, command, strlen(command), 0) == -1)
     {
-        perror("❌ Lỗi khi gửi thông tin file");
+        perror("Lỗi khi gửi thông tin file");
         fclose(file);
         return;
     }
-    g_print("📤 Đã gửi yêu cầu gửi file mã hóa: %s đến %s\n", filename, receiver);
+    g_print("Đã gửi yêu cầu gửi file mã hóa: %s.enc\n", filename_no_ext);
 
     if (send(sockfd, &file_size, sizeof(file_size), 0) == -1)
     {
-        perror("❌ Lỗi khi gửi kích thước file");
+        perror("Lỗi khi gửi kích thước file");
         fclose(file);
         return;
     }
@@ -358,7 +327,7 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
         int bytes_sent = send(sockfd, buffer, bytes_read, 0);
         if (bytes_sent == -1)
         {
-            perror("❌ Lỗi khi gửi nội dung file");
+            perror("Lỗi khi gửi nội dung file");
             fclose(file);
             return;
         }
@@ -366,379 +335,10 @@ void sendfile_to_server(GtkWidget *widget, gpointer data)
     }
     fclose(file);
 
-    g_print("✅ Đã gửi file mã hóa: %s\n", filename);
-    g_print("📏 Tổng số bytes đã gửi: %ld / %ld\n", total_bytes_sent, file_size);
-
+    g_print("Đã gửi file mã hóa: %s.enc\n", filename_no_ext);
+    g_print("Tổng số bytes đã gửi: %ld / %ld\n", total_bytes_sent, file_size);
     gtk_widget_destroy(window_send_file);
     window_send_file = NULL;
-    GtkWidget *dialog = gtk_message_dialog_new(NULL,
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Gửi file thành công");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-}
-
-void open_send_file_window(GtkWidget *widget, gpointer data)
-{
-    window_send_file = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window_send_file), "Gửi file");
-    gtk_window_set_default_size(GTK_WINDOW(window_send_file), 400, 300);
-
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_container_set_border_width(GTK_CONTAINER(window_send_file), 20);
-    gtk_container_add(GTK_CONTAINER(window_send_file), vbox);
-
-    // Hàng 1: Nút back
-    GtkWidget *btn_back = gtk_button_new_with_label("Quay lại");
-    g_signal_connect(btn_back, "clicked", G_CALLBACK(sendfile_back_to_main), NULL);
-    gtk_widget_set_halign(btn_back, GTK_ALIGN_START);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_back, FALSE, FALSE, 5);
-
-    // Hàng 2: Hiển thị tên file (readonly)
-    entry_filename = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_filename), "Chưa chọn file");
-    gtk_editable_set_editable(GTK_EDITABLE(entry_filename), FALSE);
-    gtk_box_pack_start(GTK_BOX(vbox), entry_filename, FALSE, FALSE, 5);
-
-    // Hàng 3: Field nhập key
-    entry_key = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_key), "Nhập key");
-    gtk_box_pack_start(GTK_BOX(vbox), entry_key, FALSE, FALSE, 5);
-
-    // Hàng 4: Dropdown chọn độ dài key + nút chọn file
-    GtkWidget *hbox_key = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    combo_keysize = gtk_combo_box_text_new();
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "128");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "192");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "256");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_keysize), 0);
-    gtk_box_pack_start(GTK_BOX(hbox_key), combo_keysize, TRUE, TRUE, 5);
-
-    GtkWidget *btn_choose_file = gtk_button_new_with_label("Chọn file");
-    g_signal_connect(btn_choose_file, "clicked", G_CALLBACK(on_choose_file_clicked), NULL);
-    gtk_box_pack_start(GTK_BOX(hbox_key), btn_choose_file, FALSE, FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox_key, FALSE, FALSE, 5);
-
-    GtkWidget *entry_receiver = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_receiver), "Nhập tên người nhận");
-    gtk_box_pack_start(GTK_BOX(vbox), entry_receiver, FALSE, FALSE, 5);
-    // Hàng 6: Nút gửi
-    GtkWidget *btn_send = gtk_button_new_with_label("Gửi");
-    g_signal_connect(btn_send, "clicked", G_CALLBACK(sendfile_to_server), entry_receiver);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_send, FALSE, FALSE, 5);
-
-    g_signal_connect(window_send_file, "destroy", G_CALLBACK(gtk_widget_hide), NULL);
-    gtk_widget_show_all(window_send_file);
-}
-void on_choose_file_decrypt(GtkWidget *widget, gpointer data)
-{
-    GtkWidget *dialog;
-    dialog = gtk_file_chooser_dialog_new("Chọn file để giải mã",
-                                         GTK_WINDOW(gtk_widget_get_toplevel(widget)),
-                                         GTK_FILE_CHOOSER_ACTION_OPEN,
-                                         "_Hủy", GTK_RESPONSE_CANCEL,
-                                         "_Chọn", GTK_RESPONSE_ACCEPT,
-                                         NULL);
-
-    // Đặt thư mục mặc định là "received_files/"
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), "received_files");
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
-    {
-        char *filepath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-        char *filename = g_path_get_basename(filepath);
-        gtk_entry_set_text(GTK_ENTRY(entry_filename), filename);
-        g_free(filepath);
-        g_free(filename);
-    }
-
-    gtk_widget_destroy(dialog);
-}
-
-void decrypt_back_to_main(GtkWidget *widget, gpointer data)
-{
-    gtk_widget_destroy(window_decrypt); // Đóng cửa sổ giải mã
-}
-
-void decrypt_file(GtkWidget *widget, gpointer data)
-{
-    g_print("🔄 Bắt đầu quá trình giải mã...\n");
-
-    // Kiểm tra entry_filename có hợp lệ không
-    if (!entry_filename)
-    {
-        g_print("❌ Lỗi: entry_filename chưa được khởi tạo!\n");
-        return;
-    }
-
-    const char *selected_filename = gtk_entry_get_text(GTK_ENTRY(entry_filename));
-    if (!selected_filename || strlen(selected_filename) == 0)
-    {
-        g_print("⚠️ Lỗi: Chưa chọn file để giải mã!\n");
-        return;
-    }
-
-    // Tạo đường dẫn file đầu vào
-    char input_filepath[512];
-    snprintf(input_filepath, sizeof(input_filepath), "received_files/%s", selected_filename);
-    g_print("📂 File cần giải mã: %s\n", input_filepath);
-
-    // Kiểm tra file đầu vào có tồn tại không
-    if (access(input_filepath, F_OK) == -1)
-    {
-        g_print("❌ Lỗi mở file đầu vào: %s không tồn tại!\n", input_filepath);
-        return;
-    }
-
-    // Kiểm tra entry_key có hợp lệ không
-    if (!entry_key)
-    {
-        g_print("❌ Lỗi: entry_key chưa được khởi tạo!\n");
-        return;
-    }
-
-    const char *key = gtk_entry_get_text(GTK_ENTRY(entry_key));
-    if (!key || strlen(key) == 0)
-    {
-        g_print("⚠️ Lỗi: Chưa nhập key!\n");
-        return;
-    }
-    g_print("🔑 Key nhập vào: %s\n", key);
-
-    // Kiểm tra comboBox_keysize có hợp lệ không
-    if (!comboBox_keysize)
-    {
-        g_print("❌ Lỗi: comboBox_keysize chưa được khởi tạo!\n");
-        return;
-    }
-
-    gint active_index = gtk_combo_box_get_active(GTK_COMBO_BOX(comboBox_keysize));
-    if (active_index == -1)
-    {
-        g_print("❌ Lỗi: Chưa chọn độ dài key!\n");
-        return;
-    }
-
-    const char *key_size_st = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(comboBox_keysize));
-    if (!key_size_st)
-    {
-        g_print("❌ Lỗi: Không thể lấy độ dài key!\n");
-        return;
-    }
-
-    AESKeyLength key_size_enum;
-    if (strcmp(key_size_st, "128") == 0)
-    {
-        key_size_enum = AES_128;
-    }
-    else if (strcmp(key_size_st, "192") == 0)
-    {
-        key_size_enum = AES_192;
-    }
-    else if (strcmp(key_size_st, "256") == 0)
-    {
-        key_size_enum = AES_256;
-    }
-    else
-    {
-        g_print("❌ Lỗi: Giá trị key_size không hợp lệ!\n");
-        return;
-    }
-    g_print("🔑 Độ dài key được chọn: %d-bit\n", key_size_enum);
-
-    // Tạo thư mục `de/` nếu chưa có
-    struct stat st = {0};
-    if (stat("de", &st) == -1)
-    {
-        mkdir("de", 0700);
-    }
-
-    // Tạo đường dẫn cho file output
-    char output_filepath[512];
-    if (g_str_has_suffix(selected_filename, ".enc"))
-    {
-        size_t len = strlen(selected_filename) - 4; // Bỏ ".enc"
-        char *new_filename = g_strndup(selected_filename, len);
-        snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", new_filename);
-        g_free(new_filename);
-    }
-    else
-    {
-        snprintf(output_filepath, sizeof(output_filepath), "de/%s.txt", selected_filename);
-    }
-    g_print("📂 File đầu ra: %s\n", output_filepath);
-
-    // Gọi hàm giải mã
-    g_print("🔓 Đang tiến hành giải mã...\n");
-    int decrypt_result = aes_decrypt_file((const uint8_t *)input_filepath,
-                                          (const uint8_t *)output_filepath,
-                                          (const uint8_t *)key,
-                                          (AESKeyLength)key_size_enum);
-    g_print("🔓 Kết quả giải mã: %d\n", decrypt_result);
-    if (decrypt_result != 0)
-    {
-        g_print("❌ Lỗi khi giải mã file!\n");
-        return;
-    }
-
-    g_print("✅ Giải mã thành công file %s với key: %s, độ dài: %d-bit\n", input_filepath, key, key_size_enum);
-    gtk_widget_destroy(window_decrypt);
-    // Hiển thị thông báo thành công
-    GtkWidget *dialog = gtk_message_dialog_new(NULL,
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Giải mã thành công!\nFile lưu tại: %s",
-                                               output_filepath);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-}
-
-void open_decrypt_window(GtkWidget *widget, gpointer data)
-{
-    window_decrypt = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window_decrypt), "Giải mã file");
-    gtk_window_set_default_size(GTK_WINDOW(window_decrypt), 400, 250);
-
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_container_set_border_width(GTK_CONTAINER(window_decrypt), 20);
-    gtk_container_add(GTK_CONTAINER(window_decrypt), vbox);
-
-    // Hàng 1: Nút back
-    GtkWidget *btn_back = gtk_button_new_with_label("Quay lại");
-    g_signal_connect(btn_back, "clicked", G_CALLBACK(decrypt_back_to_main), NULL);
-    gtk_widget_set_halign(btn_back, GTK_ALIGN_START);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_back, FALSE, FALSE, 5);
-
-    // Hàng 2: Hiển thị tên file (readonly)
-    entry_filename = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_filename), "Chưa chọn file");
-    gtk_editable_set_editable(GTK_EDITABLE(entry_filename), FALSE);
-    gtk_box_pack_start(GTK_BOX(vbox), entry_filename, FALSE, FALSE, 5);
-
-    // Hàng 3: Field nhập key
-    entry_key = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_key), "Nhập key");
-    gtk_box_pack_start(GTK_BOX(vbox), entry_key, FALSE, FALSE, 5);
-
-    // Hàng 4: Dropdown chọn độ dài key + nút chọn file
-    GtkWidget *hbox_key = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    comboBox_keysize = gtk_combo_box_text_new();
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(comboBox_keysize), NULL, "128");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(comboBox_keysize), NULL, "192");
-    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(comboBox_keysize), NULL, "256");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(comboBox_keysize), 0);
-    gtk_box_pack_start(GTK_BOX(hbox_key), comboBox_keysize, TRUE, TRUE, 5);
-
-    GtkWidget *btn_choose_file = gtk_button_new_with_label("Chọn file");
-    g_signal_connect(btn_choose_file, "clicked", G_CALLBACK(on_choose_file_decrypt), NULL);
-    gtk_box_pack_start(GTK_BOX(hbox_key), btn_choose_file, FALSE, FALSE, 5);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox_key, FALSE, FALSE, 5);
-
-    // Hàng 5: Nút giải mã
-    GtkWidget *btn_decrypt = gtk_button_new_with_label("Giải mã");
-    g_signal_connect(btn_decrypt, "clicked", G_CALLBACK(decrypt_file), NULL);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_decrypt, FALSE, FALSE, 5);
-
-    g_signal_connect(window_decrypt, "destroy", G_CALLBACK(gtk_widget_hide), NULL);
-    gtk_widget_show_all(window_decrypt);
-}
-// Mở cửa sổ chính
-void open_main_window()
-{
-    window_main = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window_main), "Client");
-    gtk_window_set_default_size(GTK_WINDOW(window_main), 400, 250);
-
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
-    gtk_container_set_border_width(GTK_CONTAINER(window_main), 20);
-    gtk_container_add(GTK_CONTAINER(window_main), vbox);
-
-    GtkWidget *btn_files = gtk_button_new_with_label("File của tôi");
-    g_signal_connect(btn_files, "clicked", G_CALLBACK(on_open_folder_button_clicked), NULL);
-
-    GtkWidget *btn_send = gtk_button_new_with_label("Gửi file");
-    g_signal_connect(btn_send, "clicked", G_CALLBACK(open_send_file_window), NULL);
-
-    GtkWidget *btn_received = gtk_button_new_with_label("Giải mã");
-    g_signal_connect(btn_received, "clicked", G_CALLBACK(open_decrypt_window), NULL);
-
-    GtkWidget *btn_logout = gtk_button_new_with_label("Đăng xuất");
-
-    gtk_widget_set_size_request(btn_files, 250, 50);
-    gtk_widget_set_size_request(btn_send, 250, 50);
-    gtk_widget_set_size_request(btn_received, 250, 50);
-    gtk_widget_set_size_request(btn_logout, 250, 50);
-
-    gtk_box_pack_start(GTK_BOX(vbox), btn_files, TRUE, TRUE, 5);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_send, TRUE, TRUE, 5);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_received, TRUE, TRUE, 5);
-    gtk_box_pack_start(GTK_BOX(vbox), btn_logout, TRUE, TRUE, 5);
-
-    g_signal_connect(btn_logout, "clicked", G_CALLBACK(logout), &sockfd);
-    g_signal_connect(window_main, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-    gtk_widget_show_all(window_main);
-}
-void receive_file(int sockfd, char *filename, long file_size)
-{
-    char filepath[512];
-    snprintf(filepath, sizeof(filepath), "./received_files/%s", filename);
-
-    FILE *file = fopen(filepath, "wb");
-    if (!file)
-    {
-        perror("Lỗi mở file");
-        return;
-    }
-
-    printf("Đang nhận file '%s' (%ld bytes)...\n", filename, file_size);
-
-    unsigned char buffer[BUFFER_SIZE];
-    size_t bytes_received = 0;
-    while (bytes_received < file_size)
-    {
-        ssize_t recv_bytes = recv(sockfd, buffer, BUFFER_SIZE, 0);
-        if (recv_bytes <= 0)
-        {
-            perror("Lỗi khi nhận dữ liệu hoặc kết nối bị đóng");
-            break;
-        }
-        fwrite(buffer, 1, recv_bytes, file);
-        bytes_received += recv_bytes;
-    }
-    fclose(file);
-    printf("Nhận file '%s' thành công!\n", filename);
-    GtkWidget *dialog = gtk_message_dialog_new(NULL,
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Có file %s gửi tới bạn",filename);
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-}
-
-void *receive_messages(void *arg)
-{
-    int sockfd = *(int *)arg;
-    char buffer[BUFFER_SIZE];
-
-    while (1)
-    {
-        memset(buffer, 0, BUFFER_SIZE);
-        int bytes_received = recv(sockfd, buffer, BUFFER_SIZE - 1, 0);
-        buffer[bytes_received] = '\0';
-
-        if (strncmp(buffer, "SEND_FILE", 9) == 0)
-        {
-            char filename[256];
-            long file_size;
-            sscanf(buffer, "SEND_FILE|%[^|]|%ld", filename, &file_size);
-            receive_file(sockfd, filename, file_size);
-        }
-    }
 }
 
 // Xử lý đăng nhập
@@ -786,9 +386,6 @@ void login(GtkWidget *widget, gpointer data)
             g_object_unref(connection);
             return;
         }
-        pthread_t receive_thread;
-        pthread_create(&receive_thread, NULL, receive_messages, &sockfd);
-        pthread_detach(receive_thread);
         // Lưu connection để sử dụng sau này
         client_connection = connection;
         gtk_widget_hide(window_login);
@@ -804,6 +401,87 @@ void login(GtkWidget *widget, gpointer data)
         gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy(dialog);
     }
+}
+void open_send_file_window(GtkWidget *widget, gpointer data)
+{
+    window_send_file = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window_send_file), "Gửi file");
+    gtk_window_set_default_size(GTK_WINDOW(window_send_file), 400, 300);
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_container_set_border_width(GTK_CONTAINER(window_send_file), 20);
+    gtk_container_add(GTK_CONTAINER(window_send_file), vbox);
+
+    // Hàng 1: Nút back
+    GtkWidget *btn_back = gtk_button_new_with_label("Quay lại");
+    g_signal_connect(btn_back, "clicked", G_CALLBACK(sendfile_back_to_main), NULL);
+    gtk_widget_set_halign(btn_back, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(vbox), btn_back, FALSE, FALSE, 5);
+
+    // Hàng 2: Hiển thị tên file (readonly)
+    entry_filename = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_filename), "Chưa chọn file");
+    gtk_editable_set_editable(GTK_EDITABLE(entry_filename), FALSE);
+    gtk_box_pack_start(GTK_BOX(vbox), entry_filename, FALSE, FALSE, 5);
+
+    // Hàng 3: Field nhập key
+    entry_key = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry_key), "Nhập key");
+    gtk_box_pack_start(GTK_BOX(vbox), entry_key, FALSE, FALSE, 5);
+
+    // Hàng 4: Dropdown chọn độ dài key + nút chọn file
+    GtkWidget *hbox_key = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    combo_keysize = gtk_combo_box_text_new();
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "128");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "192");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_keysize), NULL, "256");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_keysize), 0);
+    gtk_box_pack_start(GTK_BOX(hbox_key), combo_keysize, TRUE, TRUE, 5);
+
+    GtkWidget *btn_choose_file = gtk_button_new_with_label("Chọn file");
+    g_signal_connect(btn_choose_file, "clicked", G_CALLBACK(on_choose_file_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(hbox_key), btn_choose_file, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox_key, FALSE, FALSE, 5);
+
+    // Hàng 6: Nút gửi
+    GtkWidget *btn_send = gtk_button_new_with_label("Gửi");
+    g_signal_connect(btn_send, "clicked", G_CALLBACK(sendfile_to_server), NULL);
+    gtk_box_pack_start(GTK_BOX(vbox), btn_send, FALSE, FALSE, 5);
+
+    g_signal_connect(window_send_file, "destroy", G_CALLBACK(gtk_widget_hide), NULL);
+    gtk_widget_show_all(window_send_file);
+}
+// Mở cửa sổ chính
+void open_main_window()
+{
+    window_main = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window_main), "Client");
+    gtk_window_set_default_size(GTK_WINDOW(window_main), 400, 250);
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
+    gtk_container_set_border_width(GTK_CONTAINER(window_main), 20);
+    gtk_container_add(GTK_CONTAINER(window_main), vbox);
+
+    GtkWidget *btn_files = gtk_button_new_with_label("File của tôi");
+    g_signal_connect(btn_files, "clicked", G_CALLBACK(on_open_folder_button_clicked), NULL);
+
+    GtkWidget *btn_send = gtk_button_new_with_label("Gửi file");
+    g_signal_connect(btn_send, "clicked", G_CALLBACK(open_send_file_window), NULL);
+
+    GtkWidget *btn_logout = gtk_button_new_with_label("Đăng xuất");
+
+    gtk_widget_set_size_request(btn_files, 250, 50);
+    gtk_widget_set_size_request(btn_send, 250, 50);
+    gtk_widget_set_size_request(btn_logout, 250, 50);
+
+    gtk_box_pack_start(GTK_BOX(vbox), btn_files, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(vbox), btn_send, TRUE, TRUE, 5);
+    gtk_box_pack_start(GTK_BOX(vbox), btn_logout, TRUE, TRUE, 5);
+
+    g_signal_connect(btn_logout, "clicked", G_CALLBACK(logout), &sockfd);
+    g_signal_connect(window_main, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    gtk_widget_show_all(window_main);
 }
 
 void activate(GtkApplication *app, gpointer user_data)
