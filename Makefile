@@ -68,10 +68,9 @@ $(BIN_DIR)/%: $(OBJ_DIR)/%.o $(OBJ_DIR)/aes.o | $(BIN_DIR)
 # Build tất cả
 all: $(BIN_DIR) $(OBJ_DIR) $(BINARIES:%=$(BIN_DIR)/%)
 
-# Cài đặt vào thư mục Yocto
 install: all
-	install -d $(DESTDIR)/usr/bin
-	install -m 0755 $(BIN_DIR)/* $(DESTDIR)/usr/bin/
+	install -d $(DESTDIR)$(bindir)
+	install -m 0755 $(BIN_DIR)/* $(DESTDIR)$(bindir)
 
 # Dọn dẹp
 clean:
