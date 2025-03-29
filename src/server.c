@@ -150,7 +150,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     ;
     // Mở file sau khi giải mã
     char command[600];
-    snprintf(command, sizeof(command), "xdg-open \"%s\"", output_filepath);
+    snprintf(command, sizeof(command), "gio open \"%s\"", output_filepath);
     system(command);
 }
 
