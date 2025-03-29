@@ -178,7 +178,6 @@ void *client_handler(void *arg)
     {
         char buffer[BUFFER_SIZE] = {0};
         bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-
         if (bytes_received <= 0)
         {
             snprintf(log_message, sizeof(log_message), "Client '%s' disconnect.", username);
