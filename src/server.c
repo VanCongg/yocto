@@ -145,7 +145,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
 
     g_print("Giai ma thanh cong: %s\n", output_filepath);
-
+    append_log("Giai ma thanh cong : % s\n ", output_filepath);
     gtk_widget_destroy(window_decrypt);
     ;
     // Mở file sau khi giải mã
@@ -161,12 +161,6 @@ void *client_handler(void *arg)
 
     char username[BUFFER_SIZE] = {0};
     int bytes_received = recv(client_socket, username, BUFFER_SIZE - 1, 0);
-    if (bytes_received <= 0)
-    {
-        perror("recv username failed");
-        close(client_socket);
-        pthread_exit(NULL);
-    }
     username[bytes_received] = '\0';
     username[strcspn(username, "\r\n")] = '\0';
 
@@ -250,6 +244,7 @@ void *client_handler(void *arg)
             }
             fclose(file);
             printf("Nhan file '%s' thanh cong! (%ld/%ld bytes)\n", filename, total_received, file_size);
+            append_log("Da nhan file thanh cong!");
         }
     }
     close(client_socket);
