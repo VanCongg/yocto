@@ -182,22 +182,6 @@ void *client_handler(void *arg)
         if (bytes_received <= 0)
         {
             snprintf(log_message, sizeof(log_message), "Client '%s' disconnect.", username);
-            pthread_mutex_lock(&lock);
-            for (int i = 0; i < client_count; i++)
-            {
-                if (clients[i].socket == client_socket)
-                {
-                    for (int j = i; j < client_count - 1; j++)
-                    {
-                        clients[j] = clients[j + 1];
-                    }
-                    client_count--;
-                    break;
-                }
-            }
-            pthread_mutex_unlock(&lock);
-
-            break;
         }
         buffer[bytes_received] = '\0';
         char filename[256] = {0};
