@@ -145,7 +145,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
 
     g_print("Giai ma thanh cong: %s\n", output_filepath);
-    append_log("Giai ma thanh cong : % s\n ", output_filepath);
+    append_log("Giai ma thanh cong");
     gtk_widget_destroy(window_decrypt);
     ;
     // Mở file sau khi giải mã
