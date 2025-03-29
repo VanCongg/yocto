@@ -34,13 +34,9 @@ typedef struct
 } ClientInfo;
 ClientInfo clients[MAX_CLIENTS];
 // Cập nhật log
-
-gboolean append_log_safe(gpointer message)
+void append_log(const char *message)
 {
-    const char *msg = (const char *)message;
-    gtk_entry_set_text(GTK_ENTRY(log_entry), msg);
-    g_free(message); // Giải phóng bộ nhớ đã cấp phát
-    return FALSE;    // Để g_idle_add() chỉ gọi một lần rồi dừng
+    gtk_entry_set_text(GTK_ENTRY(log_entry), message);
 }
 
 void decrypt_file(GtkWidget *widget, gpointer data)
@@ -149,7 +145,6 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
 
     g_print("Giai ma thanh cong: %s\n", output_filepath);
-    g_idle_add(append_log_safe, g_strdup("Giai ma thanh cong"));
     gtk_widget_destroy(window_decrypt);
     ;
     // Mở file sau khi giải mã
@@ -170,7 +165,7 @@ void *client_handler(void *arg)
 
     char log_message[200];
     snprintf(log_message, sizeof(log_message), "Client '%s' connect", username);
-    g_idle_add(append_log_safe, g_strdup(log_message));
+    append_log(log_message);
 
     pthread_mutex_lock(&lock);
     if (client_count < MAX_CLIENTS)
@@ -186,7 +181,6 @@ void *client_handler(void *arg)
         pthread_exit(NULL);
     }
     pthread_mutex_unlock(&lock);
-
     while (1)
     {
         char buffer[BUFFER_SIZE] = {0};
@@ -195,10 +189,24 @@ void *client_handler(void *arg)
         if (bytes_received <= 0)
         {
             snprintf(log_message, sizeof(log_message), "Client '%s' disconnect.", username);
-            g_idle_add(append_log_safe, g_strdup(log_message));
+            append_log(log_message);
+            pthread_mutex_lock(&lock);
+            for (int i = 0; i < client_count; i++)
+            {
+                if (clients[i].socket == client_socket)
+                {
+                    for (int j = i; j < client_count - 1; j++)
+                    {
+                        clients[j] = clients[j + 1];
+                    }
+                    client_count--;
+                    break;
+                }
+            }
+            pthread_mutex_unlock(&lock);
+
             break;
         }
-
         buffer[bytes_received] = '\0';
         char filename[256] = {0};
         if (sscanf(buffer, "SEND_FILE|%255[^|]", filename) == 1)
@@ -248,7 +256,7 @@ void *client_handler(void *arg)
             }
             fclose(file);
             printf("Nhan file '%s' thanh cong! (%ld/%ld bytes)\n", filename, total_received, file_size);
-            g_idle_add(append_log_safe, g_strdup("Nhan file tu client thanh cong"));
+            append_log("Đã nhận file từ client.");
         }
     }
     close(client_socket);
@@ -267,7 +275,7 @@ void *server_thread(void *arg)
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0)
     {
-        g_idle_add(append_log_safe, g_strdup("loi tao socket"));
+        append_log("Lỗi tạo socket!");
         return NULL;
     }
     int opt = 1;
@@ -278,12 +286,12 @@ void *server_thread(void *arg)
 
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        g_idle_add(append_log_safe, g_strdup("loi bind"));
+        append_log("Lỗi bind!");
         return NULL;
     }
 
     listen(server_socket, MAX_CLIENTS);
-    g_idle_add(append_log_safe, g_strdup("server dang chay..."));
+    append_log("Server dang chay...");
 
     while (1)
     {
@@ -298,8 +306,7 @@ void *server_thread(void *arg)
         pthread_create(&client_thread, NULL, client_handler, client_socket);
         if (pthread_create(&client_thread, NULL, client_handler, client_socket) != 0)
         {
-            g_idle_add(append_log_safe, g_strdup("loi tao luong client"));
-
+            append_log("Lỗi tạo luồng cho client!");
             free(client_socket);
         }
         pthread_detach(client_thread);
@@ -309,7 +316,7 @@ void on_stop_server(GtkWidget *widget, gpointer data)
 {
     if (server_socket > 0)
     {
-        g_idle_add(append_log_safe, g_strdup("dang dung server..."));
+        append_log("Đang tắt server...");
         pthread_mutex_lock(&lock);
         for (int i = 0; i < client_count; i++)
         {
