@@ -34,9 +34,13 @@ typedef struct
 } ClientInfo;
 ClientInfo clients[MAX_CLIENTS];
 // Cập nhật log
-void append_log(const char *message)
+
+gboolean append_log_safe(gpointer message)
 {
-    gtk_entry_set_text(GTK_ENTRY(log_entry), message);
+    const char *msg = (const char *)message;
+    gtk_entry_set_text(GTK_ENTRY(log_entry), msg);
+    g_free(message); // Giải phóng bộ nhớ đã cấp phát
+    return FALSE;    // Để g_idle_add() chỉ gọi một lần rồi dừng
 }
 
 void decrypt_file(GtkWidget *widget, gpointer data)
@@ -145,7 +149,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
 
     g_print("Giai ma thanh cong: %s\n", output_filepath);
-    append_log("Giai ma thanh cong");
+    g_idle_add(append_log_safe, g_strdup("Giai ma thanh cong"));
     gtk_widget_destroy(window_decrypt);
     ;
     // Mở file sau khi giải mã
@@ -166,7 +170,7 @@ void *client_handler(void *arg)
 
     char log_message[200];
     snprintf(log_message, sizeof(log_message), "Client '%s' connect", username);
-    append_log(log_message);
+    g_idle_add(append_log_safe, g_strdup(log_message));
 
     pthread_mutex_lock(&lock);
     if (client_count < MAX_CLIENTS)
@@ -191,7 +195,7 @@ void *client_handler(void *arg)
         if (bytes_received <= 0)
         {
             snprintf(log_message, sizeof(log_message), "Client '%s' disconnect.", username);
-            append_log(log_message);
+            g_idle_add(append_log_safe, g_strdup(log_message));
             break;
         }
 
@@ -244,7 +248,7 @@ void *client_handler(void *arg)
             }
             fclose(file);
             printf("Nhan file '%s' thanh cong! (%ld/%ld bytes)\n", filename, total_received, file_size);
-            append_log("Da nhan file thanh cong!");
+            g_idle_add(append_log_safe, g_strdup("Nhan file tu client thanh cong"));
         }
     }
     close(client_socket);
@@ -263,7 +267,7 @@ void *server_thread(void *arg)
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0)
     {
-        append_log("Lỗi tạo socket!");
+        g_idle_add(append_log_safe, g_strdup("loi tao socket"));
         return NULL;
     }
     int opt = 1;
@@ -274,12 +278,12 @@ void *server_thread(void *arg)
 
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        append_log("Lỗi bind!");
+        g_idle_add(append_log_safe, g_strdup("loi bind"));
         return NULL;
     }
 
     listen(server_socket, MAX_CLIENTS);
-    append_log("Server dang chay...");
+    g_idle_add(append_log_safe, g_strdup("server dang chay..."));
 
     while (1)
     {
@@ -294,7 +298,8 @@ void *server_thread(void *arg)
         pthread_create(&client_thread, NULL, client_handler, client_socket);
         if (pthread_create(&client_thread, NULL, client_handler, client_socket) != 0)
         {
-            append_log("Lỗi tạo luồng cho client!");
+            g_idle_add(append_log_safe, g_strdup("loi tao luong client"));
+
             free(client_socket);
         }
         pthread_detach(client_thread);
@@ -304,7 +309,7 @@ void on_stop_server(GtkWidget *widget, gpointer data)
 {
     if (server_socket > 0)
     {
-        append_log("Đang tắt server...");
+        g_idle_add(append_log_safe, g_strdup("dang dung server..."));
         pthread_mutex_lock(&lock);
         for (int i = 0; i < client_count; i++)
         {
