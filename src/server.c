@@ -250,6 +250,8 @@ void *client_handler(void *arg)
             // nhận file
             printf("Bắt đầu nhận file: %s\n", filename);
             process_file_name(filename);
+            //file name
+            printf("Bắt đầu nhận file: %s\n", filename);
             // Tạo đường dẫn lưu file
             char filepath[512];
             const char *dir_path = "./server_en";
