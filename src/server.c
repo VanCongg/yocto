@@ -236,6 +236,8 @@ void *client_handler(void *arg)
         char filename[256] = {0};
         if (sscanf(buffer, "SEND_FILE|%255[^|]", filename) == 1)
         {
+            // nhận file
+            printf("Bắt đầu nhận file: %s\n", filename);
             // Tạo đường dẫn lưu file
             char filepath[512];
             const char *dir_path = "./server_en";
