@@ -72,7 +72,7 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     }
 
     char input_filepath[512];
-    snprintf(input_filepath, sizeof(input_filepath), "server_en/%s", selected_filename);
+    snprintf(input_filepath, sizeof(input_filepath), "server_en/%.400s", selected_filename);
     g_print("File cần giải mã: %s\n", input_filepath);
 
     if (access(input_filepath, F_OK) == -1)
@@ -164,9 +164,17 @@ void decrypt_file(GtkWidget *widget, gpointer data)
     gtk_widget_destroy(window_decrypt);
     ;
     // Mở file sau khi giải mã
-    char command[600];
-    snprintf(command, sizeof(command), "xdg-open \"%s\"", output_filepath);
-    system(command);
+    pid_t pid = fork();
+    if (pid == 0) // Tiến trình con
+    {
+        execlp("gio", "gio", "open", output_filepath, (char *)NULL);
+        perror("execlp failed"); // Chỉ chạy khi execlp thất bại
+        exit(1);
+    }
+    else if (pid < 0)
+    {
+        perror("fork failed");
+    }
 }
 
 void *client_handler(void *arg)
@@ -199,6 +207,7 @@ void *client_handler(void *arg)
     else
     {
         pthread_mutex_unlock(&lock);
+        free(client_socket);
         close(client_socket);
         pthread_exit(NULL);
     }
@@ -251,6 +260,7 @@ void *client_handler(void *arg)
             {
                 perror("Lỗi nhận kích thước file");
                 fclose(file);
+                remove(filepath);
                 close(client_socket);
                 return NULL;
             }
@@ -318,7 +328,6 @@ void *server_thread(void *arg)
             continue;
         }
         pthread_t client_thread;
-        pthread_create(&client_thread, NULL, client_handler, client_socket);
         if (pthread_create(&client_thread, NULL, client_handler, client_socket) != 0)
         {
             append_log("Lỗi tạo luồng cho client!");
