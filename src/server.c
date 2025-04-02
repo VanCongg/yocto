@@ -176,7 +176,18 @@ void decrypt_file(GtkWidget *widget, gpointer data)
         perror("fork failed");
     }
 }
-
+void process_file_name(char *filename)
+{
+    // Tìm vị trí dấu chấm trong tên file
+    char *dot_pos = strrchr(filename, '.');
+    if (dot_pos != NULL)
+    {
+        // Cắt bỏ phần đuôi sau dấu chấm
+        *dot_pos = '\0';
+    }
+    // Thêm đuôi .enc vào tên file
+    strcat(filename, ".enc");
+}
 void *client_handler(void *arg)
 {
     int client_socket = *(int *)arg;
@@ -238,6 +249,7 @@ void *client_handler(void *arg)
         {
             // nhận file
             printf("Bắt đầu nhận file: %s\n", filename);
+            process_file_name(filename);
             // Tạo đường dẫn lưu file
             char filepath[512];
             const char *dir_path = "./server_en";

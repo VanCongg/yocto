@@ -185,6 +185,7 @@ void on_choose_file_clicked(GtkWidget *widget, gpointer data)
     }
     gtk_widget_destroy(dialog);
 }
+
 void sendfile_to_server(GtkWidget *widget, gpointer data)
 {
     if (!selected_filepath)
