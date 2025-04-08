@@ -250,7 +250,7 @@ void *client_handler(void *arg)
             // nhận file
             printf("Bắt đầu nhận file: %s\n", filename);
             process_file_name(filename);
-            //file name
+            // file name
             printf("Bắt đầu nhận file: %s\n", filename);
             // Tạo đường dẫn lưu file
             char filepath[512];
@@ -297,7 +297,7 @@ void *client_handler(void *arg)
                 total_received += bytes_received;
             }
             fclose(file);
-            printf("Nhận file '%s' thành công! (%ld/%ld bytes)\n", filename, total_received, file_size);
+            append_log("Nhận file '%s' thành công! (%ld/%ld bytes)\n", filename, total_received, file_size);
         }
     }
     close(client_socket);
