@@ -297,7 +297,7 @@ void *client_handler(void *arg)
                 total_received += bytes_received;
             }
             fclose(file);
-            append_log("Nhận file '%s' thành công! (%ld/%ld bytes)\n", filename, total_received, file_size);
+            append_log("Nhận file thành công");
         }
     }
     close(client_socket);
